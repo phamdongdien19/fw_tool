@@ -1,50 +1,118 @@
 /**
  * Project Manager - FW Tools
  * Manages project data, criteria, and Alchemer quota integration
+ * Uses server-side storage via Vercel Blob
  */
 
 const ProjectManager = {
-    // Storage key
-    STORAGE_KEY: 'fw_tools_projects',
+    // API endpoint
+    API_URL: '/api/project-manager',
 
     // Current active project
     activeProjectId: null,
 
-    // Projects array
+    // Projects array (local cache)
     projects: [],
+
+    // Loading state
+    isLoading: false,
 
     /**
      * Initialize Project Manager
      */
-    init() {
-        this.loadProjects();
+    async init() {
+        await this.loadProjects();
         this.loadActiveProject();
         console.log('ProjectManager initialized with', this.projects.length, 'projects');
     },
 
     /**
-     * Load projects from localStorage
+     * Load projects from server
      */
-    loadProjects() {
+    async loadProjects() {
         try {
-            const stored = localStorage.getItem(this.STORAGE_KEY);
-            this.projects = stored ? JSON.parse(stored) : [];
+            this.isLoading = true;
+            const response = await fetch(this.API_URL);
+            const result = await response.json();
+            this.projects = result.projects || [];
+            this.isLoading = false;
+            return this.projects;
         } catch (e) {
-            console.error('Failed to load projects:', e);
-            this.projects = [];
+            console.error('Failed to load projects from server:', e);
+            // Fallback to localStorage
+            try {
+                const stored = localStorage.getItem('fw_tools_projects');
+                this.projects = stored ? JSON.parse(stored) : [];
+            } catch (e2) {
+                this.projects = [];
+            }
+            this.isLoading = false;
+            return this.projects;
         }
     },
 
     /**
-     * Save projects to localStorage
+     * Save project to server
      */
-    saveProjects() {
+    async saveProjectToServer(project) {
         try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.projects));
-            return true;
+            const response = await fetch(this.API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project })
+            });
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to save');
+            }
+            return result;
         } catch (e) {
-            console.error('Failed to save projects:', e);
-            return false;
+            console.error('Failed to save project to server:', e);
+            // Fallback: save to localStorage
+            localStorage.setItem('fw_tools_projects', JSON.stringify(this.projects));
+            throw e;
+        }
+    },
+
+    /**
+     * Update project on server
+     */
+    async updateProjectOnServer(id, updates) {
+        try {
+            const response = await fetch(this.API_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, updates })
+            });
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to update');
+            }
+            return result;
+        } catch (e) {
+            console.error('Failed to update project on server:', e);
+            // Fallback: save to localStorage
+            localStorage.setItem('fw_tools_projects', JSON.stringify(this.projects));
+            throw e;
+        }
+    },
+
+    /**
+     * Delete project from server
+     */
+    async deleteProjectFromServer(id) {
+        try {
+            const response = await fetch(`${this.API_URL}?id=${id}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to delete');
+            }
+            return result;
+        } catch (e) {
+            console.error('Failed to delete project from server:', e);
+            throw e;
         }
     },
 
@@ -58,7 +126,7 @@ const ProjectManager = {
     /**
      * Create a new project
      */
-    createProject({ name, surveyId, criteria, target, notes }) {
+    async createProject({ name, surveyId, criteria, target, notes }) {
         const project = {
             id: this.generateId(),
             name: name || 'Untitled Project',
@@ -72,8 +140,13 @@ const ProjectManager = {
             updatedAt: new Date().toISOString()
         };
 
+        // Add to local cache first
         this.projects.unshift(project);
-        this.saveProjects();
+
+        // Save to server (async, don't block)
+        this.saveProjectToServer(project).catch(e => {
+            console.error('Background save failed:', e);
+        });
 
         return project;
     },
@@ -81,7 +154,7 @@ const ProjectManager = {
     /**
      * Update an existing project
      */
-    updateProject(id, updates) {
+    async updateProject(id, updates) {
         const index = this.projects.findIndex(p => p.id === id);
         if (index === -1) return null;
 
@@ -91,14 +164,18 @@ const ProjectManager = {
             updatedAt: new Date().toISOString()
         };
 
-        this.saveProjects();
+        // Save to server (async)
+        this.updateProjectOnServer(id, updates).catch(e => {
+            console.error('Background update failed:', e);
+        });
+
         return this.projects[index];
     },
 
     /**
      * Delete a project
      */
-    deleteProject(id) {
+    async deleteProject(id) {
         const index = this.projects.findIndex(p => p.id === id);
         if (index === -1) return false;
 
@@ -108,7 +185,11 @@ const ProjectManager = {
             this.activeProjectId = null;
         }
 
-        this.saveProjects();
+        // Delete from server (async)
+        this.deleteProjectFromServer(id).catch(e => {
+            console.error('Background delete failed:', e);
+        });
+
         return true;
     },
 
@@ -191,7 +272,7 @@ const ProjectManager = {
             }));
 
             // Update project with quota data
-            this.updateProject(projectId, {
+            await this.updateProject(projectId, {
                 quotas: quotas,
                 lastQuotaFetch: new Date().toISOString()
             });
@@ -219,46 +300,32 @@ const ProjectManager = {
             return null;
         }
 
-        const quotas = project.quotas;
-        const totalLimit = quotas.reduce((sum, q) => sum + q.limit, 0);
-        const totalCompleted = quotas.reduce((sum, q) => sum + q.count, 0);
-
         return {
-            projectName: project.name,
-            surveyId: project.surveyId,
-            criteria: project.criteria,
-            target: project.target,
-            notes: project.notes,
-            quotaCount: quotas.length,
-            totalLimit: totalLimit,
-            totalCompleted: totalCompleted,
-            totalRemaining: quotas.reduce((sum, q) => sum + q.remaining, 0),
-            quotas: quotas,
-            lastFetch: project.lastQuotaFetch,
-            completionRate: totalLimit > 0 ? Math.round((totalCompleted / totalLimit) * 100) : 0
+            totalLimit: project.quotas.reduce((sum, q) => sum + q.limit, 0),
+            totalCompleted: project.quotas.reduce((sum, q) => sum + q.count, 0),
+            totalRemaining: project.quotas.reduce((sum, q) => sum + q.remaining, 0),
+            quotaCount: project.quotas.length,
+            lastFetch: project.lastQuotaFetch
         };
     },
 
     /**
-     * Get quota text summary (for display)
+     * Get quota display text for tooltip/notes
      */
     getQuotaTextSummary(projectId) {
         const summary = this.getQuotaSummary(projectId);
         if (!summary) return 'Chưa có dữ liệu quota';
 
-        const lines = [];
-        lines.push(`📊 ${summary.projectName}`);
-        if (summary.criteria) {
-            lines.push(`📌 Tiêu chí: ${summary.criteria}`);
-        }
-        lines.push(`📈 Hoàn thành: ${summary.totalCompleted}/${summary.totalLimit} (${summary.completionRate}%)`);
-        lines.push(`⏳ Còn thiếu: ${summary.totalRemaining}`);
+        const project = this.getProject(projectId);
+        let text = `Quota Status (${new Date(summary.lastFetch).toLocaleString('vi-VN')}):\n`;
+        text += `Tổng: ${summary.totalCompleted}/${summary.totalLimit} (còn ${summary.totalRemaining})\n\n`;
 
-        if (summary.notes) {
-            lines.push(`💡 ${summary.notes}`);
-        }
+        project.quotas.forEach(q => {
+            const percent = q.limit > 0 ? Math.round((q.count / q.limit) * 100) : 0;
+            text += `• ${q.name}: ${q.count}/${q.limit} (${percent}%)\n`;
+        });
 
-        return lines.join('\n');
+        return text;
     },
 
     /**
@@ -271,11 +338,11 @@ const ProjectManager = {
     /**
      * Import projects from JSON
      */
-    importProjects(jsonString, merge = false) {
+    async importProjects(jsonString, merge = false) {
         try {
             const imported = JSON.parse(jsonString);
             if (!Array.isArray(imported)) {
-                throw new Error('Invalid format');
+                throw new Error('Invalid format: expected array');
             }
 
             if (merge) {
@@ -284,14 +351,18 @@ const ProjectManager = {
                     const existing = this.projects.find(p => p.id === proj.id);
                     if (!existing) {
                         this.projects.push(proj);
+                        this.saveProjectToServer(proj).catch(e => console.error(e));
                     }
                 });
             } else {
-                // Replace all
+                // Replace all - need to delete old and add new
                 this.projects = imported;
+                // Save each project to server
+                for (const proj of imported) {
+                    await this.saveProjectToServer(proj);
+                }
             }
 
-            this.saveProjects();
             return { success: true, count: imported.length };
         } catch (e) {
             return { success: false, error: e.message };
