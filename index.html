@@ -23,693 +23,698 @@
                     <span></span>
                 </button>
             </div>
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <span></span>
-            </button>
-    </div>
 
-    <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-view="dashboard">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-text">Dashboard</span>
-        </a>
-        <a href="#" class="nav-item" data-view="import">
-            <span class="nav-icon">📥</span>
-            <span class="nav-text">Import Data</span>
-        </a>
-        <a href="#" class="nav-item" data-view="data">
-            <span class="nav-icon">📋</span>
-            <span class="nav-text">Data View</span>
-        </a>
-        <a href="#" class="nav-item" data-view="export">
-            <span class="nav-icon">📤</span>
-            <span class="nav-text">Export</span>
-        </a>
-        <a href="#" class="nav-item" data-view="config">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-text">Config</span>
-        </a>
-    </nav>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="import">
+                    <span class="nav-icon">📥</span>
+                    <span class="nav-text">Import Data</span>
+                </a>
+                <a href="#" class="nav-item" data-view="data">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">Data View</span>
+                </a>
+                <a href="#" class="nav-item" data-view="export">
+                    <span class="nav-icon">📤</span>
+                    <span class="nav-text">Export</span>
+                </a>
+                <a href="#" class="nav-item" data-view="config">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Config</span>
+                </a>
+            </nav>
 
-    <div class="sidebar-footer">
-        <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
-            <span class="theme-icon">🌙</span>
-        </button>
-        <span class="version">v1.0.0</span>
-    </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Header -->
-        <header class="main-header">
-            <div class="header-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-                <h1 class="page-title" id="pageTitle">Dashboard</h1>
+            <div class="sidebar-footer">
+                <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <span class="version">v1.0.0</span>
             </div>
-            <div class="header-right">
-                <div class="project-manager">
-                    <select id="projectSelect" class="form-control form-control-sm"
-                        onchange="handleProjectSelect(this.value)">
-                        <option value="">-- Chọn Project --</option>
-                    </select>
-                    <button class="btn btn-sm btn-primary" onclick="saveCurrentProject()" title="Save Project">💾
-                        Save</button>
-                    <button class="btn btn-sm btn-secondary" onclick="createNewProject()" title="New Project">+
-                        New</button>
-                    <span class="save-indicator" id="saveIndicator">✓ Saved</span>
-                </div>
-                <div class="file-info" id="fileInfo">
-                    <span class="file-name">No file loaded</span>
-                </div>
-            </div>
-        </header>
+        </aside>
 
-        <!-- Content Views -->
-        <div class="content-wrapper">
-            <!-- Dashboard View -->
-            <section class="view active" id="dashboardView">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon total">📊</div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="totalRows">0</span>
-                            <span class="stat-label">Total Rows</span>
-                        </div>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+                    <h1 class="page-title" id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <div class="project-manager">
+                        <select id="projectSelect" class="form-control form-control-sm"
+                            onchange="handleProjectSelect(this.value)">
+                            <option value="">-- Chọn Project --</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="saveCurrentProject()" title="Save Project">💾
+                            Save</button>
+                        <button class="btn btn-sm btn-secondary" onclick="createNewProject()" title="New Project">+
+                            New</button>
+                        <span class="save-indicator" id="saveIndicator">✓ Saved</span>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon sms">📱</div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="smsMarked">0</span>
-                            <span class="stat-label">SMS Marked</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon email">📧</div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="emailMarked">0</span>
-                            <span class="stat-label">Email Marked</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon pending">⏳</div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="pendingRows">0</span>
-                            <span class="stat-label">Pending</span>
-                        </div>
+                    <div class="file-info" id="fileInfo">
+                        <span class="file-name">No file loaded</span>
                     </div>
                 </div>
+            </header>
 
-                <div class="dashboard-content">
-                    <div class="card batch-history-card">
-                        <div class="card-header">
-                            <h3>📈 Batch History</h3>
+            <!-- Content Views -->
+            <div class="content-wrapper">
+                <!-- Dashboard View -->
+                <section class="view active" id="dashboardView">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon total">📊</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="totalRows">0</span>
+                                <span class="stat-label">Total Rows</span>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="batch-chart" id="batchChart">
-                                <div class="empty-state">
-                                    <span class="empty-icon">📊</span>
-                                    <p>Import data để xem thống kê batch</p>
-                                </div>
+                        <div class="stat-card">
+                            <div class="stat-icon sms">📱</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="smsMarked">0</span>
+                                <span class="stat-label">SMS Marked</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon email">📧</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="emailMarked">0</span>
+                                <span class="stat-label">Email Marked</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon pending">⏳</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="pendingRows">0</span>
+                                <span class="stat-label">Pending</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card recent-actions-card">
+                    <div class="dashboard-content">
+                        <div class="card batch-history-card">
+                            <div class="card-header">
+                                <h3>📈 Batch History</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="batch-chart" id="batchChart">
+                                    <div class="empty-state">
+                                        <span class="empty-icon">📊</span>
+                                        <p>Import data để xem thống kê batch</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card recent-actions-card">
+                            <div class="card-header">
+                                <h3>📋 Recent Actions</h3>
+                            </div>
+                            <div class="card-body">
+                                <ul class="action-list" id="actionList">
+                                    <li class="empty-state">
+                                        <span class="empty-icon">📝</span>
+                                        <p>Chưa có hoạt động nào</p>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <h3>⚡ Quick Actions</h3>
+                        <div class="quick-actions-grid">
+                            <button class="quick-action-btn" onclick="switchView('import')">
+                                <span class="qa-icon">📥</span>
+                                <span>Import File</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="markBatch('sms', 500)" id="quickMarkSms" disabled>
+                                <span class="qa-icon">📱</span>
+                                <span>Mark SMS 500</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="markBatch('email', 500)" id="quickMarkEmail"
+                                disabled>
+                                <span class="qa-icon">📧</span>
+                                <span>Mark Email 500</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="exportLatestBatch()" id="quickExport" disabled>
+                                <span class="qa-icon">📤</span>
+                                <span>Export Latest</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Import View -->
+                <section class="view" id="importView">
+                    <div class="import-container">
+                        <!-- Import Type Tabs -->
+                        <div class="import-type-tabs">
+                            <button class="tab-btn active" data-import-type="file" onclick="switchImportTab('file')">📁
+                                Import File</button>
+                            <button class="tab-btn" data-import-type="api" onclick="switchImportTab('api')">🔗 Alchemer
+                                API</button>
+                        </div>
+
+                        <!-- File Import Panel -->
+                        <div class="import-panel" id="fileImportPanel">
+                            <div class="drop-zone" id="dropZone">
+                                <div class="drop-zone-content">
+                                    <span class="drop-icon">📁</span>
+                                    <h3>Kéo thả file vào đây</h3>
+                                    <p>Hỗ trợ CSV, Excel (.xlsx, .xls)</p>
+                                    <div class="drop-divider">
+                                        <span>hoặc</span>
+                                    </div>
+                                    <div class="file-input-wrapper">
+                                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
+                                        <button class="btn btn-primary"
+                                            onclick="document.getElementById('fileInput').click()">Chọn File</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="import-options card" id="importOptions" style="display: none;">
+                                <div class="card-header">
+                                    <h3>⚙️ Import Options</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label>Sheet (cho file Excel):</label>
+                                        <select id="sheetSelect" class="form-control">
+                                            <option value="0">Sheet 1</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Header row:</label>
+                                        <input type="number" id="headerRow" class="form-control" value="1" min="1">
+                                    </div>
+                                    <div class="form-group checkbox-group">
+                                        <label>
+                                            <input type="checkbox" id="autoDetectColumns" checked>
+                                            Tự động detect column mapping
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-secondary" onclick="cancelImport()">Hủy</button>
+                                    <button class="btn btn-primary" onclick="confirmImport()">Import</button>
+                                </div>
+                            </div>
+
+                            <div class="import-preview card" id="importPreview" style="display: none;">
+                                <div class="card-header">
+                                    <h3>👁️ Preview</h3>
+                                    <span class="preview-count" id="previewCount"></span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-container">
+                                        <table class="data-table" id="previewTable">
+                                            <thead></thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alchemer API Panel -->
+                        <div class="import-panel" id="apiImportPanel" style="display: none;">
+                            <!-- API Credentials Card -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>🔑 API Credentials</h3>
+                                    <span class="api-status" id="apiStatus">Not configured</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="config-grid">
+                                        <div class="form-group">
+                                            <label>API Token:</label>
+                                            <input type="text" id="apiToken" class="form-control"
+                                                placeholder="Your Alchemer API Token">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>API Secret:</label>
+                                            <input type="password" id="apiSecret" class="form-control"
+                                                placeholder="Your API Secret">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Survey ID:</label>
+                                            <input type="text" id="apiSurveyId" class="form-control"
+                                                placeholder="Survey ID to fetch">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-secondary" onclick="testApiConnection()">🔍 Test
+                                        Connection</button>
+                                    <button class="btn btn-primary" onclick="saveApiCredentials()">💾 Save
+                                        Credentials</button>
+                                </div>
+                            </div>
+
+                            <!-- Update Status Card -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>🔄 Update Response Status</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                                        Lấy status (Complete/Partial/Disqualified) từ Alchemer và cập nhật vào data đã
+                                        import.
+                                    </p>
+                                    <div class="config-grid">
+                                        <div class="form-group">
+                                            <label>PLID Column (trong data hiện tại):</label>
+                                            <select id="plidColumnSelect" class="form-control">
+                                                <option value="">-- Chọn cột chứa PLID --</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Status Column (sẽ tạo mới nếu chưa có):</label>
+                                            <input type="text" id="statusColumnName" class="form-control"
+                                                value="Response_Status" placeholder="Response_Status">
+                                        </div>
+                                    </div>
+                                    <div class="api-progress" id="apiProgress" style="display: none;">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="apiProgressFill" style="width: 0%"></div>
+                                        </div>
+                                        <span class="progress-text" id="apiProgressText">0%</span>
+                                    </div>
+                                    <div class="api-result" id="apiResult" style="display: none; margin-top: 16px;">
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-primary" onclick="fetchAndUpdateStatus()"
+                                        id="fetchStatusBtn">
+                                        🔄 Fetch & Update Status
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Fetch Full Data Card -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>📥 Fetch Full Survey Data</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                                        Tải toàn bộ responses từ survey và thay thế data hiện tại.
+                                    </p>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-secondary" onclick="fetchFullSurveyData()">
+                                        📥 Fetch All Responses
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data View -->
+                <section class="view" id="dataView">
+                    <div class="data-toolbar">
+                        <div class="toolbar-left">
+                            <div class="filter-section">
+                                <button class="btn btn-icon" id="filterToggle" title="Toggle Filters">
+                                    🔍
+                                </button>
+                                <span class="filter-status" id="filterStatus">No filter</span>
+                            </div>
+                            <div class="search-box">
+                                <input type="text" id="searchInput" placeholder="Tìm kiếm..." class="form-control">
+                            </div>
+                            <button class="btn btn-sm btn-secondary" onclick="shuffleData()" title="Shuffle Rows">
+                                <img src="assets/icons/cat.png" alt="" class="btn-icon-img"> 🔀 Shuffle
+                            </button>
+                            <div class="column-visibility-dropdown">
+                                <button class="btn btn-sm btn-outline" id="columnVisibilityBtn"
+                                    title="Column Visibility">
+                                    👁️ Columns
+                                </button>
+                                <div class="column-visibility-panel" id="columnVisibilityPanel" style="display: none;">
+                                    <div class="panel-header">
+                                        <span>Hiển thị cột</span>
+                                        <button class="btn btn-xs btn-outline"
+                                            onclick="toggleAllColumns(true)">All</button>
+                                        <button class="btn btn-xs btn-outline"
+                                            onclick="toggleAllColumns(false)">None</button>
+                                    </div>
+                                    <div class="column-list" id="columnVisibilityList"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="toolbar-right">
+                            <span class="row-count">Showing <span id="visibleCount">0</span> / <span
+                                    id="totalCount">0</span></span>
+                            <button class="btn btn-icon" onclick="refreshData()" title="Refresh">🔄</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-panel" id="filterPanel" style="display: none;">
+                        <div class="filter-builder">
+                            <div class="filter-conditions" id="filterConditions">
+                                <!-- Filter conditions will be added here -->
+                            </div>
+                            <div class="filter-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="addFilterCondition()">+ Add
+                                    Condition</button>
+                                <button class="btn btn-sm btn-primary" onclick="applyFilters()">Apply</button>
+                                <button class="btn btn-sm btn-outline" onclick="clearFilters()">Clear All</button>
+                            </div>
+                        </div>
+                        <div class="filter-presets">
+                            <label>Preset:</label>
+                            <select id="filterPreset" class="form-control form-control-sm">
+                                <option value="">-- Select --</option>
+                                <option value="unmarked">Chưa đánh batch</option>
+                                <option value="sms-pending">SMS chưa gửi</option>
+                                <option value="email-pending">Email chưa gửi</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline" onclick="saveFilterPreset()">Save</button>
+                        </div>
+                    </div>
+
+                    <div class="data-table-container">
+                        <table class="data-table" id="dataTable">
+                            <thead id="dataTableHead"></thead>
+                            <tbody id="dataTableBody"></tbody>
+                        </table>
+                        <div class="empty-state" id="dataEmptyState">
+                            <img src="assets/icons/mantis.png" alt="" class="empty-icon-img">
+                            <p>Chưa có dữ liệu. Vui lòng import file.</p>
+                            <button class="btn btn-primary" onclick="switchView('import')">Import Data</button>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-controls" id="paginationControls">
+                        <div class="pagination-info">
+                            <span>Rows per page:</span>
+                            <select id="rowsPerPage" class="form-control form-control-sm"
+                                onchange="changeRowsPerPage(this.value)">
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100" selected>100</option>
+                                <option value="200">200</option>
+                                <option value="500">500</option>
+                            </select>
+                            <span class="page-info" id="pageInfo">Page 1 of 1</span>
+                        </div>
+                        <div class="pagination-buttons">
+                            <button class="btn btn-sm btn-outline" onclick="goToPage('first')" id="pageFirst">⏮️
+                                First</button>
+                            <button class="btn btn-sm btn-outline" onclick="goToPage('prev')" id="pagePrev">◀️
+                                Prev</button>
+                            <span class="page-numbers" id="pageNumbers"></span>
+                            <button class="btn btn-sm btn-outline" onclick="goToPage('next')" id="pageNext">Next
+                                ▶️</button>
+                            <button class="btn btn-sm btn-outline" onclick="goToPage('last')" id="pageLast">Last
+                                ⏭️</button>
+                        </div>
+                    </div>
+
+                    <div class="data-actions">
+                        <div class="batch-actions">
+                            <div class="action-group">
+                                <label>SMS Batch:</label>
+                                <div class="btn-group">
+                                    <button class="btn btn-sms" onclick="markBatch('sms', 500)">Mark 500</button>
+                                    <button class="btn btn-sms" onclick="markBatch('sms', 1000)">Mark 1000</button>
+                                    <button class="btn btn-sms" onclick="markBatchPrompt('sms')">Custom...</button>
+                                </div>
+                            </div>
+                            <div class="action-group">
+                                <label>Email Batch:</label>
+                                <div class="btn-group">
+                                    <button class="btn btn-email" onclick="markBatch('email', 500)">Mark 500</button>
+                                    <button class="btn btn-email" onclick="markBatch('email', 1000)">Mark 1000</button>
+                                    <button class="btn btn-email" onclick="markBatchPrompt('email')">Custom...</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-group">
+                            <label>Remind SMS:</label>
+                            <div class="btn-group">
+                                <button class="btn btn-sms" onclick="markBatch('remind_sms', 500)">Mark 500</button>
+                                <button class="btn btn-sms" onclick="markBatch('remind_sms', 1000)">Mark 1000</button>
+                                <button class="btn btn-sms" onclick="markBatchPrompt('remind_sms')">Custom...</button>
+                            </div>
+                        </div>
+                        <div class="action-group">
+                            <label>Remind Email:</label>
+                            <div class="btn-group">
+                                <button class="btn btn-email" onclick="markBatch('remind_email', 500)">Mark 500</button>
+                                <button class="btn btn-email" onclick="markBatch('remind_email', 1000)">Mark
+                                    1000</button>
+                                <button class="btn btn-email"
+                                    onclick="markBatchPrompt('remind_email')">Custom...</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="undo-actions">
+                        <button class="btn btn-outline" id="undoBtn" onclick="undoAction()" disabled>
+                            ↶ Undo
+                        </button>
+                        <button class="btn btn-outline" id="redoBtn" onclick="redoAction()" disabled>
+                            Redo ↷
+                        </button>
+                    </div>
+            </div>
+            </section>
+
+            <!-- Export View -->
+            <section class="view" id="exportView">
+                <div class="export-container">
+                    <div class="card">
                         <div class="card-header">
-                            <h3>📋 Recent Actions</h3>
+                            <h3>📤 Export Options</h3>
                         </div>
                         <div class="card-body">
-                            <ul class="action-list" id="actionList">
+                            <div class="export-type-tabs">
+                                <button class="tab-btn active" data-type="sms">SMS Export</button>
+                                <button class="tab-btn" data-type="email">Email Export</button>
+                                <button class="tab-btn" data-type="custom">Custom Export</button>
+                            </div>
+
+                            <div class="export-panel" id="smsExportPanel">
+                                <div class="form-group">
+                                    <label>Select Batch:</label>
+                                    <select id="smsBatchSelect" class="form-control">
+                                        <option value="">-- Select batch --</option>
+                                    </select>
+                                </div>
+                                <div class="export-preview-info">
+                                    <span>Rows to export: <strong id="smsExportCount">0</strong></span>
+                                </div>
+                                <div class="form-group">
+                                    <label>Columns to export:</label>
+                                    <div class="column-chips" id="smsExportColumns">
+                                        <span class="chip active">Phone (Column A)</span>
+                                        <span class="chip active">SMS Content</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="export-panel" id="emailExportPanel" style="display: none;">
+                                <div class="form-group">
+                                    <label>Select Batch:</label>
+                                    <select id="emailBatchSelect" class="form-control">
+                                        <option value="">-- Select batch --</option>
+                                    </select>
+                                </div>
+                                <div class="export-preview-info">
+                                    <span>Rows to export: <strong id="emailExportCount">0</strong></span>
+                                </div>
+                                <div class="form-group">
+                                    <label>Columns to export:</label>
+                                    <div class="column-chips" id="emailExportColumns">
+                                        <span class="chip active">Email</span>
+                                        <span class="chip active">SGUID Link</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="export-panel" id="customExportPanel" style="display: none;">
+                                <div class="form-group">
+                                    <label>Select Columns:</label>
+                                    <div class="column-selector" id="customColumnSelector">
+                                        <!-- Dynamic columns -->
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Filter:</label>
+                                    <select id="customExportFilter" class="form-control">
+                                        <option value="all">All rows</option>
+                                        <option value="visible">Visible rows only (current filter)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="form-group inline">
+                                <label>Format:</label>
+                                <select id="exportFormat" class="form-control form-control-sm">
+                                    <option value="xlsx">Excel (.xlsx)</option>
+                                    <option value="csv">CSV (.csv)</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary btn-lg" onclick="executeExport()">
+                                📥 Download Export
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card export-history-card">
+                        <div class="card-header">
+                            <h3>📜 Export History</h3>
+                        </div>
+                        <div class="card-body">
+                            <ul class="export-history-list" id="exportHistory">
                                 <li class="empty-state">
-                                    <span class="empty-icon">📝</span>
-                                    <p>Chưa có hoạt động nào</p>
+                                    <span class="empty-icon">📁</span>
+                                    <p>Chưa có export nào</p>
                                 </li>
                             </ul>
                         </div>
                     </div>
                 </div>
-
-                <div class="quick-actions">
-                    <h3>⚡ Quick Actions</h3>
-                    <div class="quick-actions-grid">
-                        <button class="quick-action-btn" onclick="switchView('import')">
-                            <span class="qa-icon">📥</span>
-                            <span>Import File</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="markBatch('sms', 500)" id="quickMarkSms" disabled>
-                            <span class="qa-icon">📱</span>
-                            <span>Mark SMS 500</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="markBatch('email', 500)" id="quickMarkEmail" disabled>
-                            <span class="qa-icon">📧</span>
-                            <span>Mark Email 500</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="exportLatestBatch()" id="quickExport" disabled>
-                            <span class="qa-icon">📤</span>
-                            <span>Export Latest</span>
-                        </button>
-                    </div>
-                </div>
             </section>
 
-            <!-- Import View -->
-            <section class="view" id="importView">
-                <div class="import-container">
-                    <!-- Import Type Tabs -->
-                    <div class="import-type-tabs">
-                        <button class="tab-btn active" data-import-type="file" onclick="switchImportTab('file')">📁
-                            Import File</button>
-                        <button class="tab-btn" data-import-type="api" onclick="switchImportTab('api')">🔗 Alchemer
-                            API</button>
-                    </div>
-
-                    <!-- File Import Panel -->
-                    <div class="import-panel" id="fileImportPanel">
-                        <div class="drop-zone" id="dropZone">
-                            <div class="drop-zone-content">
-                                <span class="drop-icon">📁</span>
-                                <h3>Kéo thả file vào đây</h3>
-                                <p>Hỗ trợ CSV, Excel (.xlsx, .xls)</p>
-                                <div class="drop-divider">
-                                    <span>hoặc</span>
-                                </div>
-                                <div class="file-input-wrapper">
-                                    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
-                                    <button class="btn btn-primary"
-                                        onclick="document.getElementById('fileInput').click()">Chọn File</button>
-                                </div>
-                            </div>
+            <!-- Config View -->
+            <section class="view" id="configView">
+                <div class="config-container">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>⚙️ Column Configuration</h3>
                         </div>
-
-                        <div class="import-options card" id="importOptions" style="display: none;">
-                            <div class="card-header">
-                                <h3>⚙️ Import Options</h3>
-                            </div>
-                            <div class="card-body">
+                        <div class="card-body">
+                            <div class="config-grid">
                                 <div class="form-group">
-                                    <label>Sheet (cho file Excel):</label>
-                                    <select id="sheetSelect" class="form-control">
-                                        <option value="0">Sheet 1</option>
+                                    <label>Source Column (sguid_link):</label>
+                                    <select id="configSourceCol" class="form-control">
+                                        <option value="E">E</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label>Header row:</label>
-                                    <input type="number" id="headerRow" class="form-control" value="1" min="1">
+                                    <label>Content Column (SMS):</label>
+                                    <select id="configContentCol" class="form-control">
+                                        <option value="P">P</option>
+                                    </select>
                                 </div>
-                                <div class="form-group checkbox-group">
-                                    <label>
-                                        <input type="checkbox" id="autoDetectColumns" checked>
-                                        Tự động detect column mapping
-                                    </label>
+                                <div class="form-group">
+                                    <label>SMS Batch Column:</label>
+                                    <select id="configBatchCol" class="form-control">
+                                        <option value="Q">Q</option>
+                                    </select>
                                 </div>
-                            </div>
-                            <div class="card-footer">
-                                <button class="btn btn-secondary" onclick="cancelImport()">Hủy</button>
-                                <button class="btn btn-primary" onclick="confirmImport()">Import</button>
-                            </div>
-                        </div>
-
-                        <div class="import-preview card" id="importPreview" style="display: none;">
-                            <div class="card-header">
-                                <h3>👁️ Preview</h3>
-                                <span class="preview-count" id="previewCount"></span>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-container">
-                                    <table class="data-table" id="previewTable">
-                                        <thead></thead>
-                                        <tbody></tbody>
-                                    </table>
+                                <div class="form-group">
+                                    <label>Email Column:</label>
+                                    <select id="configEmailCol" class="form-control">
+                                        <option value="H">H</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Email Batch Column:</label>
+                                    <select id="configEmailBatchCol" class="form-control">
+                                        <option value="S">S</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Email Link Column:</label>
+                                    <select id="configEmailLinkCol" class="form-control">
+                                        <option value="E">E</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Remind SMS Batch Column:</label>
+                                    <select id="configRemindSmsBatchCol" class="form-control">
+                                        <option value="T">T</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Remind Email Batch Column:</label>
+                                    <select id="configRemindEmailBatchCol" class="form-control">
+                                        <option value="U">U</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Respondent Status Column:</label>
+                                    <select id="configStatusCol" class="form-control">
+                                        <option value="V">V</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Alchemer API Panel -->
-                    <div class="import-panel" id="apiImportPanel" style="display: none;">
-                        <!-- API Credentials Card -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>🔑 API Credentials</h3>
-                                <span class="api-status" id="apiStatus">Not configured</span>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📝 Template Management</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Current Template:</label>
+                                <textarea id="templateText" class="form-control" rows="4"
+                                    placeholder="Enter SMS template text..."></textarea>
+                                <small class="form-hint">Biến {link} sẽ được thay bằng giá trị từ Source
+                                    Column</small>
                             </div>
-                            <div class="card-body">
-                                <div class="config-grid">
-                                    <div class="form-group">
-                                        <label>API Token:</label>
-                                        <input type="text" id="apiToken" class="form-control"
-                                            placeholder="Your Alchemer API Token">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>API Secret:</label>
-                                        <input type="password" id="apiSecret" class="form-control"
-                                            placeholder="Your API Secret">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Survey ID:</label>
-                                        <input type="text" id="apiSurveyId" class="form-control"
-                                            placeholder="Survey ID to fetch">
+                            <div class="template-library">
+                                <label>Saved Templates:</label>
+                                <div class="template-list" id="templateList">
+                                    <div class="template-item">
+                                        <span class="template-name">Default Template</span>
+                                        <div class="template-actions">
+                                            <button class="btn btn-sm btn-outline"
+                                                onclick="loadTemplate(0)">Load</button>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteTemplate(0)">×</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-footer">
-                                <button class="btn btn-secondary" onclick="testApiConnection()">🔍 Test
-                                    Connection</button>
-                                <button class="btn btn-primary" onclick="saveApiCredentials()">💾 Save
-                                    Credentials</button>
+                                <button class="btn btn-secondary" onclick="saveCurrentTemplate()">+ Save Current as
+                                    Template</button>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Update Status Card -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>🔄 Update Response Status</h3>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔧 Advanced Options</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="configOverwriteBatch">
+                                    Overwrite existing batch (ghi đè batch cũ)
+                                </label>
                             </div>
-                            <div class="card-body">
-                                <p style="color: var(--text-secondary); margin-bottom: 16px;">
-                                    Lấy status (Complete/Partial/Disqualified) từ Alchemer và cập nhật vào data đã
-                                    import.
-                                </p>
-                                <div class="config-grid">
-                                    <div class="form-group">
-                                        <label>PLID Column (trong data hiện tại):</label>
-                                        <select id="plidColumnSelect" class="form-control">
-                                            <option value="">-- Chọn cột chứa PLID --</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Status Column (sẽ tạo mới nếu chưa có):</label>
-                                        <input type="text" id="statusColumnName" class="form-control"
-                                            value="Response_Status" placeholder="Response_Status">
-                                    </div>
-                                </div>
-                                <div class="api-progress" id="apiProgress" style="display: none;">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" id="apiProgressFill" style="width: 0%"></div>
-                                    </div>
-                                    <span class="progress-text" id="apiProgressText">0%</span>
-                                </div>
-                                <div class="api-result" id="apiResult" style="display: none; margin-top: 16px;">
-                                </div>
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="configExportAfterMark">
+                                    Auto export after mark
+                                </label>
                             </div>
-                            <div class="card-footer">
-                                <button class="btn btn-primary" onclick="fetchAndUpdateStatus()" id="fetchStatusBtn">
-                                    🔄 Fetch & Update Status
-                                </button>
+                            <div class="form-group">
+                                <label>Default batch limit:</label>
+                                <input type="number" id="configDefaultLimit" class="form-control" value="500" min="1">
                             </div>
                         </div>
-
-                        <!-- Fetch Full Data Card -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>📥 Fetch Full Survey Data</h3>
-                            </div>
-                            <div class="card-body">
-                                <p style="color: var(--text-secondary); margin-bottom: 16px;">
-                                    Tải toàn bộ responses từ survey và thay thế data hiện tại.
-                                </p>
-                            </div>
-                            <div class="card-footer">
-                                <button class="btn btn-secondary" onclick="fetchFullSurveyData()">
-                                    📥 Fetch All Responses
-                                </button>
-                            </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" onclick="resetConfig()">Reset to Defaults</button>
+                            <button class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
                         </div>
                     </div>
                 </div>
             </section>
-
-            <!-- Data View -->
-            <section class="view" id="dataView">
-                <div class="data-toolbar">
-                    <div class="toolbar-left">
-                        <div class="filter-section">
-                            <button class="btn btn-icon" id="filterToggle" title="Toggle Filters">
-                                🔍
-                            </button>
-                            <span class="filter-status" id="filterStatus">No filter</span>
-                        </div>
-                        <div class="search-box">
-                            <input type="text" id="searchInput" placeholder="Tìm kiếm..." class="form-control">
-                        </div>
-                        <button class="btn btn-sm btn-secondary" onclick="shuffleData()" title="Shuffle Rows">
-                            <img src="assets/icons/cat.png" alt="" class="btn-icon-img"> 🔀 Shuffle
-                        </button>
-                        <div class="column-visibility-dropdown">
-                            <button class="btn btn-sm btn-outline" id="columnVisibilityBtn" title="Column Visibility">
-                                👁️ Columns
-                            </button>
-                            <div class="column-visibility-panel" id="columnVisibilityPanel" style="display: none;">
-                                <div class="panel-header">
-                                    <span>Hiển thị cột</span>
-                                    <button class="btn btn-xs btn-outline" onclick="toggleAllColumns(true)">All</button>
-                                    <button class="btn btn-xs btn-outline"
-                                        onclick="toggleAllColumns(false)">None</button>
-                                </div>
-                                <div class="column-list" id="columnVisibilityList"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="toolbar-right">
-                        <span class="row-count">Showing <span id="visibleCount">0</span> / <span
-                                id="totalCount">0</span></span>
-                        <button class="btn btn-icon" onclick="refreshData()" title="Refresh">🔄</button>
-                    </div>
-                </div>
-
-                <div class="filter-panel" id="filterPanel" style="display: none;">
-                    <div class="filter-builder">
-                        <div class="filter-conditions" id="filterConditions">
-                            <!-- Filter conditions will be added here -->
-                        </div>
-                        <div class="filter-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="addFilterCondition()">+ Add
-                                Condition</button>
-                            <button class="btn btn-sm btn-primary" onclick="applyFilters()">Apply</button>
-                            <button class="btn btn-sm btn-outline" onclick="clearFilters()">Clear All</button>
-                        </div>
-                    </div>
-                    <div class="filter-presets">
-                        <label>Preset:</label>
-                        <select id="filterPreset" class="form-control form-control-sm">
-                            <option value="">-- Select --</option>
-                            <option value="unmarked">Chưa đánh batch</option>
-                            <option value="sms-pending">SMS chưa gửi</option>
-                            <option value="email-pending">Email chưa gửi</option>
-                        </select>
-                        <button class="btn btn-sm btn-outline" onclick="saveFilterPreset()">Save</button>
-                    </div>
-                </div>
-
-                <div class="data-table-container">
-                    <table class="data-table" id="dataTable">
-                        <thead id="dataTableHead"></thead>
-                        <tbody id="dataTableBody"></tbody>
-                    </table>
-                    <div class="empty-state" id="dataEmptyState">
-                        <img src="assets/icons/mantis.png" alt="" class="empty-icon-img">
-                        <p>Chưa có dữ liệu. Vui lòng import file.</p>
-                        <button class="btn btn-primary" onclick="switchView('import')">Import Data</button>
-                    </div>
-                </div>
-
-                <!-- Pagination -->
-                <div class="pagination-controls" id="paginationControls">
-                    <div class="pagination-info">
-                        <span>Rows per page:</span>
-                        <select id="rowsPerPage" class="form-control form-control-sm"
-                            onchange="changeRowsPerPage(this.value)">
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100" selected>100</option>
-                            <option value="200">200</option>
-                            <option value="500">500</option>
-                        </select>
-                        <span class="page-info" id="pageInfo">Page 1 of 1</span>
-                    </div>
-                    <div class="pagination-buttons">
-                        <button class="btn btn-sm btn-outline" onclick="goToPage('first')" id="pageFirst">⏮️
-                            First</button>
-                        <button class="btn btn-sm btn-outline" onclick="goToPage('prev')" id="pagePrev">◀️ Prev</button>
-                        <span class="page-numbers" id="pageNumbers"></span>
-                        <button class="btn btn-sm btn-outline" onclick="goToPage('next')" id="pageNext">Next ▶️</button>
-                        <button class="btn btn-sm btn-outline" onclick="goToPage('last')" id="pageLast">Last ⏭️</button>
-                    </div>
-                </div>
-
-                <div class="data-actions">
-                    <div class="batch-actions">
-                        <div class="action-group">
-                            <label>SMS Batch:</label>
-                            <div class="btn-group">
-                                <button class="btn btn-sms" onclick="markBatch('sms', 500)">Mark 500</button>
-                                <button class="btn btn-sms" onclick="markBatch('sms', 1000)">Mark 1000</button>
-                                <button class="btn btn-sms" onclick="markBatchPrompt('sms')">Custom...</button>
-                            </div>
-                        </div>
-                        <div class="action-group">
-                            <label>Email Batch:</label>
-                            <div class="btn-group">
-                                <button class="btn btn-email" onclick="markBatch('email', 500)">Mark 500</button>
-                                <button class="btn btn-email" onclick="markBatch('email', 1000)">Mark 1000</button>
-                                <button class="btn btn-email" onclick="markBatchPrompt('email')">Custom...</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="action-group">
-                        <label>Remind SMS:</label>
-                        <div class="btn-group">
-                            <button class="btn btn-sms" onclick="markBatch('remind_sms', 500)">Mark 500</button>
-                            <button class="btn btn-sms" onclick="markBatch('remind_sms', 1000)">Mark 1000</button>
-                            <button class="btn btn-sms" onclick="markBatchPrompt('remind_sms')">Custom...</button>
-                        </div>
-                    </div>
-                    <div class="action-group">
-                        <label>Remind Email:</label>
-                        <div class="btn-group">
-                            <button class="btn btn-email" onclick="markBatch('remind_email', 500)">Mark 500</button>
-                            <button class="btn btn-email" onclick="markBatch('remind_email', 1000)">Mark
-                                1000</button>
-                            <button class="btn btn-email" onclick="markBatchPrompt('remind_email')">Custom...</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="undo-actions">
-                    <button class="btn btn-outline" id="undoBtn" onclick="undoAction()" disabled>
-                        ↶ Undo
-                    </button>
-                    <button class="btn btn-outline" id="redoBtn" onclick="redoAction()" disabled>
-                        Redo ↷
-                    </button>
-                </div>
-        </div>
-        </section>
-
-        <!-- Export View -->
-        <section class="view" id="exportView">
-            <div class="export-container">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📤 Export Options</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="export-type-tabs">
-                            <button class="tab-btn active" data-type="sms">SMS Export</button>
-                            <button class="tab-btn" data-type="email">Email Export</button>
-                            <button class="tab-btn" data-type="custom">Custom Export</button>
-                        </div>
-
-                        <div class="export-panel" id="smsExportPanel">
-                            <div class="form-group">
-                                <label>Select Batch:</label>
-                                <select id="smsBatchSelect" class="form-control">
-                                    <option value="">-- Select batch --</option>
-                                </select>
-                            </div>
-                            <div class="export-preview-info">
-                                <span>Rows to export: <strong id="smsExportCount">0</strong></span>
-                            </div>
-                            <div class="form-group">
-                                <label>Columns to export:</label>
-                                <div class="column-chips" id="smsExportColumns">
-                                    <span class="chip active">Phone (Column A)</span>
-                                    <span class="chip active">SMS Content</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="export-panel" id="emailExportPanel" style="display: none;">
-                            <div class="form-group">
-                                <label>Select Batch:</label>
-                                <select id="emailBatchSelect" class="form-control">
-                                    <option value="">-- Select batch --</option>
-                                </select>
-                            </div>
-                            <div class="export-preview-info">
-                                <span>Rows to export: <strong id="emailExportCount">0</strong></span>
-                            </div>
-                            <div class="form-group">
-                                <label>Columns to export:</label>
-                                <div class="column-chips" id="emailExportColumns">
-                                    <span class="chip active">Email</span>
-                                    <span class="chip active">SGUID Link</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="export-panel" id="customExportPanel" style="display: none;">
-                            <div class="form-group">
-                                <label>Select Columns:</label>
-                                <div class="column-selector" id="customColumnSelector">
-                                    <!-- Dynamic columns -->
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Filter:</label>
-                                <select id="customExportFilter" class="form-control">
-                                    <option value="all">All rows</option>
-                                    <option value="visible">Visible rows only (current filter)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="form-group inline">
-                            <label>Format:</label>
-                            <select id="exportFormat" class="form-control form-control-sm">
-                                <option value="xlsx">Excel (.xlsx)</option>
-                                <option value="csv">CSV (.csv)</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-primary btn-lg" onclick="executeExport()">
-                            📥 Download Export
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card export-history-card">
-                    <div class="card-header">
-                        <h3>📜 Export History</h3>
-                    </div>
-                    <div class="card-body">
-                        <ul class="export-history-list" id="exportHistory">
-                            <li class="empty-state">
-                                <span class="empty-icon">📁</span>
-                                <p>Chưa có export nào</p>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Config View -->
-        <section class="view" id="configView">
-            <div class="config-container">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>⚙️ Column Configuration</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="config-grid">
-                            <div class="form-group">
-                                <label>Source Column (sguid_link):</label>
-                                <select id="configSourceCol" class="form-control">
-                                    <option value="E">E</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Content Column (SMS):</label>
-                                <select id="configContentCol" class="form-control">
-                                    <option value="P">P</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>SMS Batch Column:</label>
-                                <select id="configBatchCol" class="form-control">
-                                    <option value="Q">Q</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Email Column:</label>
-                                <select id="configEmailCol" class="form-control">
-                                    <option value="H">H</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Email Batch Column:</label>
-                                <select id="configEmailBatchCol" class="form-control">
-                                    <option value="S">S</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Email Link Column:</label>
-                                <select id="configEmailLinkCol" class="form-control">
-                                    <option value="E">E</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Remind SMS Batch Column:</label>
-                                <select id="configRemindSmsBatchCol" class="form-control">
-                                    <option value="T">T</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Remind Email Batch Column:</label>
-                                <select id="configRemindEmailBatchCol" class="form-control">
-                                    <option value="U">U</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Respondent Status Column:</label>
-                                <select id="configStatusCol" class="form-control">
-                                    <option value="V">V</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📝 Template Management</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label>Current Template:</label>
-                            <textarea id="templateText" class="form-control" rows="4"
-                                placeholder="Enter SMS template text..."></textarea>
-                            <small class="form-hint">Biến {link} sẽ được thay bằng giá trị từ Source
-                                Column</small>
-                        </div>
-                        <div class="template-library">
-                            <label>Saved Templates:</label>
-                            <div class="template-list" id="templateList">
-                                <div class="template-item">
-                                    <span class="template-name">Default Template</span>
-                                    <div class="template-actions">
-                                        <button class="btn btn-sm btn-outline" onclick="loadTemplate(0)">Load</button>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteTemplate(0)">×</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn btn-secondary" onclick="saveCurrentTemplate()">+ Save Current as
-                                Template</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔧 Advanced Options</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="configOverwriteBatch">
-                                Overwrite existing batch (ghi đè batch cũ)
-                            </label>
-                        </div>
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="configExportAfterMark">
-                                Auto export after mark
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>Default batch limit:</label>
-                            <input type="number" id="configDefaultLimit" class="form-control" value="500" min="1">
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <button class="btn btn-secondary" onclick="resetConfig()">Reset to Defaults</button>
-                        <button class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-        </div>
+    </div>
     </main>
     </div>
 
