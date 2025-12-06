@@ -467,6 +467,12 @@ body {
     color: var(--text-primary);
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
 .file-info {
     background: var(--bg-tertiary);
     padding: 8px 16px;

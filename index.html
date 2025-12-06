@@ -193,6 +193,8 @@
                         <div class="import-type-tabs">
                             <button class="tab-btn active" data-import-type="file" onclick="switchImportTab('file')">📁
                                 Import File</button>
+                            <button class="tab-btn" data-import-type="url" onclick="switchImportTab('url')">🌐 Import
+                                URL</button>
                             <button class="tab-btn" data-import-type="api" onclick="switchImportTab('api')">🔗 Alchemer
                                 API</button>
                         </div>
@@ -255,6 +257,36 @@
                                             <tbody></tbody>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- URL Import Panel -->
+                        <div class="import-panel" id="urlImportPanel" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>🌐 Import từ URL</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                                        Nhập URL của file CSV hoặc Excel để import trực tiếp.
+                                    </p>
+                                    <div class="form-group">
+                                        <label>URL:</label>
+                                        <input type="url" id="importUrl" class="form-control"
+                                            placeholder="https://example.com/data.csv">
+                                    </div>
+                                    <div class="url-import-progress" id="urlImportProgress" style="display: none;">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="urlProgressFill" style="width: 0%"></div>
+                                        </div>
+                                        <span class="progress-text" id="urlProgressText">Đang tải...</span>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-primary" onclick="importFromUrl()">
+                                        📥 Import từ URL
+                                    </button>
                                 </div>
                             </div>
                         </div>

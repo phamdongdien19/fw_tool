@@ -647,6 +647,7 @@ function switchImportTab(type) {
 
     // Update panels
     document.getElementById('fileImportPanel').style.display = type === 'file' ? 'block' : 'none';
+    document.getElementById('urlImportPanel').style.display = type === 'url' ? 'block' : 'none';
     document.getElementById('apiImportPanel').style.display = type === 'api' ? 'block' : 'none';
 
     // Load API credentials if switching to API tab
@@ -655,6 +656,94 @@ function switchImportTab(type) {
         updatePlidColumnSelect();
     }
 }
+
+// ===== Import from URL =====
+async function importFromUrl() {
+    const url = document.getElementById('importUrl').value.trim();
+
+    if (!url) {
+        UIRenderer.showToast('Vui lòng nhập URL.', 'warning');
+        return;
+    }
+
+    const progress = document.getElementById('urlImportProgress');
+    const progressFill = document.getElementById('urlProgressFill');
+    const progressText = document.getElementById('urlProgressText');
+
+    progress.style.display = 'block';
+    progressFill.style.width = '30%';
+    progressText.textContent = 'Đang tải từ URL...';
+
+    try {
+        // Use CORS proxy
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to fetch URL');
+        }
+
+        progressFill.style.width = '60%';
+        progressText.textContent = 'Đang parse dữ liệu...';
+
+        let workbook;
+        if (result.encoding === 'base64') {
+            // Excel file
+            const binary = atob(result.data);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            workbook = XLSX.read(bytes, { type: 'array' });
+        } else {
+            // CSV/text file
+            workbook = XLSX.read(result.data, { type: 'string' });
+        }
+
+        progressFill.style.width = '80%';
+        progressText.textContent = 'Đang import...';
+
+        // Parse data
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+        if (!jsonData || jsonData.length === 0) {
+            throw new Error('File is empty or invalid');
+        }
+
+        const headers = jsonData[0].map(h => String(h).trim());
+        const data = jsonData.slice(1).map((row, i) => {
+            const obj = { _rowIndex: i };
+            headers.forEach((h, j) => {
+                obj[h] = row[j] !== undefined ? row[j] : '';
+            });
+            return obj;
+        });
+
+        DataManager.setData(headers, data, result.filename || 'URL Import');
+
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Hoàn thành!';
+
+        UIRenderer.showToast(`Import thành công ${data.length} dòng từ URL.`, 'success');
+        addNotification(`Import ${data.length} rows từ URL`, '🌐');
+
+        // Switch to data view
+        setTimeout(() => {
+            progress.style.display = 'none';
+            switchView('data');
+        }, 1000);
+
+    } catch (error) {
+        console.error('URL import error:', error);
+        UIRenderer.showToast(`Lỗi: ${error.message}`, 'error');
+        progress.style.display = 'none';
+    }
+}
+
+window.importFromUrl = importFromUrl;
 
 // ===== Alchemer API Functions =====
 function loadApiCredentials() {
