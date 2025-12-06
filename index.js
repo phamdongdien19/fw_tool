@@ -117,6 +117,7 @@ function switchView(viewName) {
     const titles = {
         dashboard: 'Dashboard',
         import: 'Import Data',
+        urlImport: 'URL Import',
         data: 'Data View',
         export: 'Export',
         config: 'Configuration'
@@ -127,6 +128,13 @@ function switchView(viewName) {
     switch (viewName) {
         case 'dashboard':
             UIRenderer.renderDashboard();
+            break;
+        case 'urlImport':
+            // Render URL import table if data exists
+            if (urlImportState.data.length > 0) {
+                renderUrlDataTable();
+            }
+            loadUrlHistoryList();
             break;
         case 'data':
             UIRenderer.renderDataTable();
@@ -1830,28 +1838,28 @@ async function deleteCurrentProject() {
         return;
     }
 
-    const projectName = selectedOption.text;
-    const projectUrl = selectedOption.value;
+    const projectName = selectedOption.value; // value is the project name
+    const displayName = selectedOption.text;
 
-    if (!confirm(`Bạn có chắc chắn muốn xóa project "${projectName}"?\nHành động này không thể hoàn tác.`)) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa project "${displayName}"?\nHành động này không thể hoàn tác.`)) {
         return;
     }
 
     try {
-        // Delete from Vercel Blob
-        const response = await fetch('/api/projects', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: projectUrl })
+        // Delete from Vercel Blob using correct endpoint
+        const response = await fetch(`/api/projects/delete?name=${encodeURIComponent(projectName)}`, {
+            method: 'DELETE'
         });
 
-        if (!response.ok) {
-            throw new Error('Failed to delete project');
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Failed to delete project');
         }
 
         // Remove from starred projects
         let starred = getStarredProjects();
-        starred = starred.filter(p => p !== projectName);
+        starred = starred.filter(p => p !== displayName);
         saveStarredProjects(starred);
 
         // Remove from dropdown
@@ -1862,12 +1870,16 @@ async function deleteCurrentProject() {
         updateProjectStarButton();
         renderStarredProjects();
 
-        // Clear current data
-        DataManager.clearData();
-        UIRenderer.renderDataTable();
+        // Clear current data if this was the current project
+        if (StorageManager.currentProject === projectName) {
+            StorageManager.currentProject = null;
+            DataManager.clear();
+            UIRenderer.renderDataTable();
+            UIRenderer.updateFileInfo();
+        }
 
-        UIRenderer.showToast(`Đã xóa project: ${projectName}`, 'success');
-        addNotification(`Xóa project: ${projectName}`, '🗑️');
+        UIRenderer.showToast(`Đã xóa project: ${displayName}`, 'success');
+        addNotification(`Xóa project: ${displayName}`, '🗑️');
 
     } catch (error) {
         console.error('Delete project error:', error);
