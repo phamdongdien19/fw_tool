@@ -70,9 +70,12 @@
                 <div class="header-right">
                     <div class="project-manager">
                         <select id="projectSelect" class="form-control form-control-sm"
-                            onchange="handleProjectSelect(this.value)">
+                            onchange="handleProjectSelect(this.value); updateProjectStarButton();">
                             <option value="">-- Chọn Project --</option>
                         </select>
+                        <button class="star-toggle" id="projectStarBtn" style="display: none;"
+                            onclick="toggleStarProject(document.getElementById('projectSelect').selectedOptions[0]?.text)"
+                            title="Gắn sao dự án">☆</button>
                         <button class="btn btn-sm btn-primary" onclick="saveCurrentProject()" title="Save Project">💾
                             Save</button>
                         <button class="btn btn-sm btn-secondary" onclick="createNewProject()" title="New Project">+
@@ -186,6 +189,20 @@
                                 <span class="qa-icon">📤</span>
                                 <span>Export Latest</span>
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Starred Projects Card -->
+                    <div class="card starred-projects-card">
+                        <div class="card-header">
+                            <h3><img src="assets/icons/star.png" alt="" class="header-icon"> Dự án yêu thích</h3>
+                            <img src="assets/icons/drink.png" alt="Relax" class="relax-icon" title="Have a break!">
+                        </div>
+                        <div class="card-body">
+                            <div class="starred-projects-list" id="starredProjectsList">
+                                <p class="no-starred">Chưa có dự án nào được gắn sao. Click ⭐ bên cạnh tên dự án để
+                                    thêm.</p>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -420,7 +437,8 @@
                                     </div>
                                     <div class="url-import-progress" id="urlModuleProgress" style="display: none;">
                                         <div class="progress-bar">
-                                            <div class="progress-fill" id="urlModuleProgressFill" style="width: 0%"></div>
+                                            <div class="progress-fill" id="urlModuleProgressFill" style="width: 0%">
+                                            </div>
                                         </div>
                                         <span class="progress-text" id="urlModuleProgressText">Đang tải...</span>
                                     </div>
@@ -442,24 +460,29 @@
                                 <div class="url-toolbar">
                                     <!-- Filter -->
                                     <div class="url-filter-group">
-                                        <select id="urlFilterColumn" class="form-control form-control-sm" onchange="updateUrlFilterValues()">
+                                        <select id="urlFilterColumn" class="form-control form-control-sm"
+                                            onchange="updateUrlFilterValues()">
                                             <option value="">-- Lọc theo cột --</option>
                                         </select>
-                                        <select id="urlFilterValue" class="form-control form-control-sm" onchange="applyUrlFilter()">
+                                        <select id="urlFilterValue" class="form-control form-control-sm"
+                                            onchange="applyUrlFilter()">
                                             <option value="">-- Tất cả --</option>
                                         </select>
                                         <button class="btn btn-xs btn-outline" onclick="clearUrlFilter()">✕</button>
                                     </div>
                                     <!-- Column Visibility -->
                                     <div class="url-visibility-dropdown">
-                                        <button class="btn btn-sm btn-outline" id="urlColVisBtn" onclick="toggleUrlColumnPanel()">
+                                        <button class="btn btn-sm btn-outline" id="urlColVisBtn"
+                                            onclick="toggleUrlColumnPanel()">
                                             👁️ Cột
                                         </button>
                                         <div class="url-visibility-panel" id="urlColVisPanel" style="display: none;">
                                             <div class="panel-header">
                                                 <span>Hiển thị cột</span>
-                                                <button class="btn btn-xs btn-outline" onclick="toggleUrlAllColumns(true)">All</button>
-                                                <button class="btn btn-xs btn-outline" onclick="toggleUrlAllColumns(false)">None</button>
+                                                <button class="btn btn-xs btn-outline"
+                                                    onclick="toggleUrlAllColumns(true)">All</button>
+                                                <button class="btn btn-xs btn-outline"
+                                                    onclick="toggleUrlAllColumns(false)">None</button>
                                             </div>
                                             <div class="column-list" id="urlColumnList"></div>
                                         </div>
@@ -479,17 +502,22 @@
                                 <div class="url-pagination-controls">
                                     <div class="pagination-left">
                                         <div class="pagination-buttons">
-                                            <button class="btn btn-sm btn-outline" onclick="goToUrlPage('first')">⏮️</button>
-                                            <button class="btn btn-sm btn-outline" onclick="goToUrlPage('prev')">◀️</button>
+                                            <button class="btn btn-sm btn-outline"
+                                                onclick="goToUrlPage('first')">⏮️</button>
+                                            <button class="btn btn-sm btn-outline"
+                                                onclick="goToUrlPage('prev')">◀️</button>
                                             <span class="page-numbers" id="urlPageNumbers"></span>
-                                            <button class="btn btn-sm btn-outline" onclick="goToUrlPage('next')">▶️</button>
-                                            <button class="btn btn-sm btn-outline" onclick="goToUrlPage('last')">⏭️</button>
+                                            <button class="btn btn-sm btn-outline"
+                                                onclick="goToUrlPage('next')">▶️</button>
+                                            <button class="btn btn-sm btn-outline"
+                                                onclick="goToUrlPage('last')">⏭️</button>
                                         </div>
                                         <span class="pagination-info" id="urlPaginationInfo">Page 1 of 1</span>
                                     </div>
                                     <div class="pagination-right">
                                         <span>Rows:</span>
-                                        <select id="urlRowsPerPage" class="form-control form-control-sm" onchange="changeUrlRowsPerPage(this.value)">
+                                        <select id="urlRowsPerPage" class="form-control form-control-sm"
+                                            onchange="changeUrlRowsPerPage(this.value)">
                                             <option value="25">25</option>
                                             <option value="50">50</option>
                                             <option value="100" selected>100</option>

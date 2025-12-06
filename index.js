@@ -1353,6 +1353,11 @@ window.updateDeleteBatchDropdown = updateDeleteBatchDropdown;
 window.deleteBatchAction = deleteBatchAction;
 
 // ===== URL Import Module =====
+const URL_DEFAULT_COLUMNS = [
+    'Response ID', 'status', 'source', 'db.mobile',
+    'prov_name', 'age_group', 'gender', 'sguid.plid'
+];
+
 const urlImportState = {
     data: [],
     headers: [],
@@ -1429,7 +1434,9 @@ async function importUrlModule() {
         urlImportState.headers = jsonData[0].map(h => String(h).trim());
         urlImportState.data = jsonData.slice(1);
         urlImportState.filteredData = urlImportState.data;
-        urlImportState.visibleColumns = new Set(urlImportState.headers);
+        // Set default visible columns (only include if header exists)
+        const defaultCols = urlImportState.headers.filter(h => URL_DEFAULT_COLUMNS.includes(h));
+        urlImportState.visibleColumns = new Set(defaultCols.length > 0 ? defaultCols : urlImportState.headers);
         urlImportState.filterColumn = '';
         urlImportState.filterValue = '';
         urlImportState.currentPage = 1;
@@ -1690,3 +1697,91 @@ window.clearUrlFilter = clearUrlFilter;
 window.toggleUrlColumnPanel = toggleUrlColumnPanel;
 window.toggleUrlColumn = toggleUrlColumn;
 window.toggleUrlAllColumns = toggleUrlAllColumns;
+
+// ===== Starred Projects =====
+const STARRED_PROJECTS_KEY = 'fw_tools_starred_projects';
+
+function getStarredProjects() {
+    return JSON.parse(localStorage.getItem(STARRED_PROJECTS_KEY) || '[]');
+}
+
+function saveStarredProjects(projects) {
+    localStorage.setItem(STARRED_PROJECTS_KEY, JSON.stringify(projects));
+}
+
+function isProjectStarred(projectName) {
+    return getStarredProjects().includes(projectName);
+}
+
+function toggleStarProject(projectName) {
+    let starred = getStarredProjects();
+    if (starred.includes(projectName)) {
+        starred = starred.filter(p => p !== projectName);
+        UIRenderer.showToast(`Đã bỏ sao: ${projectName}`, 'info');
+    } else {
+        starred.push(projectName);
+        UIRenderer.showToast(`Đã gắn sao: ${projectName}`, 'success');
+    }
+    saveStarredProjects(starred);
+    renderStarredProjects();
+    updateProjectStarButton();
+}
+
+function renderStarredProjects() {
+    const container = document.getElementById('starredProjectsList');
+    if (!container) return;
+
+    const starred = getStarredProjects();
+
+    if (starred.length === 0) {
+        container.innerHTML = '<p class="no-starred">Chưa có dự án nào được gắn sao. Click ⭐ bên cạnh tên dự án để thêm.</p>';
+        return;
+    }
+
+    container.innerHTML = starred.map(name => `
+        <div class="starred-project-item" onclick="loadStarredProject('${name}')">
+            <img src="assets/icons/star.png" alt="★" class="star-icon">
+            <span class="project-name">${name}</span>
+            <button class="btn btn-xs unstar-btn" onclick="event.stopPropagation(); toggleStarProject('${name}')">✕</button>
+        </div>
+    `).join('');
+}
+
+function loadStarredProject(projectName) {
+    const projectSelect = document.getElementById('projectSelect');
+    if (projectSelect) {
+        // Find and select the project
+        const options = Array.from(projectSelect.options);
+        const option = options.find(o => o.text === projectName || o.value.includes(projectName));
+        if (option) {
+            projectSelect.value = option.value;
+            handleProjectSelect(option.value);
+        } else {
+            UIRenderer.showToast(`Không tìm thấy project: ${projectName}`, 'warning');
+        }
+    }
+}
+
+function updateProjectStarButton() {
+    const currentProject = document.getElementById('projectSelect')?.selectedOptions[0]?.text;
+    const starBtn = document.getElementById('projectStarBtn');
+    if (starBtn && currentProject && currentProject !== '-- Chọn Project --') {
+        const isStarred = isProjectStarred(currentProject);
+        starBtn.innerHTML = isStarred ? '⭐' : '☆';
+        starBtn.classList.toggle('starred', isStarred);
+        starBtn.style.display = 'inline-block';
+    } else if (starBtn) {
+        starBtn.style.display = 'none';
+    }
+}
+
+// Initialize starred projects on load
+document.addEventListener('DOMContentLoaded', () => {
+    renderStarredProjects();
+});
+
+// Make starred functions global
+window.toggleStarProject = toggleStarProject;
+window.loadStarredProject = loadStarredProject;
+window.renderStarredProjects = renderStarredProjects;
+window.updateProjectStarButton = updateProjectStarButton;

@@ -2385,3 +2385,110 @@ textarea.form-control {
 .url-table-body {
     padding: 0 !important;
 }
+
+/* ===== Starred Projects ===== */
+.starred-projects-card {
+    min-height: 150px;
+}
+
+.starred-projects-card .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-icon {
+    width: 22px;
+    height: 22px;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.relax-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.relax-icon:hover {
+    transform: scale(1.2) rotate(10deg);
+}
+
+.starred-projects-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.starred-project-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 1px solid transparent;
+}
+
+.starred-project-item:hover {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+}
+
+.starred-project-item .star-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.starred-project-item .project-name {
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.starred-project-item .unstar-btn {
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-size: 12px;
+    padding: 2px 4px;
+}
+
+.starred-project-item:hover .unstar-btn {
+    opacity: 1;
+}
+
+.no-starred {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* Star toggle button */
+.star-toggle {
+    padding: 4px 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.5;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.star-toggle:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.star-toggle.starred {
+    opacity: 1;
+}
+
+/* Search icon */
+.search-icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+}
