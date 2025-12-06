@@ -2006,7 +2006,7 @@ window.updateProjectStarButton = updateProjectStarButton;
 window.deleteCurrentProject = deleteCurrentProject;
 
 // ===== Project Management Module =====
-let selectedProjectId = null;
+var selectedProjectId = null;
 
 function renderProjectsList() {
     const listContainer = document.getElementById('projectsList');
