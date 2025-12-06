@@ -1117,3 +1117,143 @@ window.toggleColumn = toggleColumn;
 window.toggleAllColumns = toggleAllColumns;
 window.initColumnVisibility = initColumnVisibility;
 window.updatePagination = updatePagination;
+
+// ===== Notification System =====
+let notifications = [];
+
+function addNotification(title, icon = '📢') {
+    const notification = {
+        id: Date.now(),
+        title,
+        icon,
+        time: new Date(),
+        read: false
+    };
+    notifications.unshift(notification);
+    updateNotificationBadge();
+    renderNotifications();
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById('notificationBadge');
+    const unreadCount = notifications.filter(n => !n.read).length;
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function renderNotifications() {
+    const list = document.getElementById('notificationList');
+    if (!list) return;
+
+    if (notifications.length === 0) {
+        list.innerHTML = '<div class="notification-empty">Không có thông báo mới</div>';
+        return;
+    }
+
+    list.innerHTML = notifications.slice(0, 20).map(n => {
+        const timeStr = n.time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        return `
+            <div class="notification-item ${n.read ? '' : 'unread'}" onclick="markNotificationRead(${n.id})">
+                <span class="notification-icon">${n.icon}</span>
+                <div class="notification-content">
+                    <div class="notification-title">${n.title}</div>
+                    <div class="notification-time">${timeStr}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleNotificationPanel() {
+    const panel = document.getElementById('notificationPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function markNotificationRead(id) {
+    const n = notifications.find(n => n.id === id);
+    if (n) n.read = true;
+    updateNotificationBadge();
+    renderNotifications();
+}
+
+function clearNotifications() {
+    notifications = [];
+    updateNotificationBadge();
+    renderNotifications();
+}
+
+// ===== Delete Batch =====
+function updateDeleteBatchDropdown() {
+    const typeSelect = document.getElementById('deleteBatchType');
+    const numberSelect = document.getElementById('deleteBatchNumber');
+    if (!typeSelect || !numberSelect) return;
+
+    const type = typeSelect.value;
+    const batches = type === 'sms' ? DataManager.getSmsBatches() : DataManager.getEmailBatches();
+
+    numberSelect.innerHTML = '<option value="">-- Select --</option>' +
+        batches.map(b => `<option value="${b}">Batch ${b}</option>`).join('');
+}
+
+function deleteBatchAction() {
+    const type = document.getElementById('deleteBatchType').value;
+    const batchNumber = parseInt(document.getElementById('deleteBatchNumber').value);
+
+    if (!batchNumber) {
+        UIRenderer.showToast('Vui lòng chọn batch để xóa.', 'warning');
+        return;
+    }
+
+    if (!confirm(`Bạn có chắc muốn xóa ${type.toUpperCase()} Batch ${batchNumber}?`)) {
+        return;
+    }
+
+    let result;
+    if (type === 'sms') {
+        result = BatchManager.deleteSmsBatch(batchNumber);
+    } else {
+        result = BatchManager.deleteEmailBatch(batchNumber);
+    }
+
+    if (result.success) {
+        UIRenderer.showToast(result.message, 'success');
+        addNotification(`Đã xóa ${type.toUpperCase()} Batch ${batchNumber}`, '🗑️');
+        UIRenderer.renderDataTable();
+        UIRenderer.renderDashboard();
+        updateDeleteBatchDropdown();
+
+        if (typeof StorageManager !== 'undefined') {
+            StorageManager.markDirty();
+        }
+    } else {
+        UIRenderer.showToast(result.message, 'error');
+    }
+}
+
+// Update dropdown when type changes
+document.addEventListener('DOMContentLoaded', () => {
+    const typeSelect = document.getElementById('deleteBatchType');
+    if (typeSelect) {
+        typeSelect.addEventListener('change', updateDeleteBatchDropdown);
+    }
+});
+
+// Close notification panel when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.notification-bell')) {
+        const panel = document.getElementById('notificationPanel');
+        if (panel) panel.style.display = 'none';
+    }
+});
+
+// Make functions global
+window.toggleNotificationPanel = toggleNotificationPanel;
+window.clearNotifications = clearNotifications;
+window.markNotificationRead = markNotificationRead;
+window.addNotification = addNotification;
+window.updateDeleteBatchDropdown = updateDeleteBatchDropdown;
+window.deleteBatchAction = deleteBatchAction;

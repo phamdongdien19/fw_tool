@@ -257,6 +257,86 @@ const BatchManager = {
 
         ConfigManager.addActionHistory({ type: 'mark_remind_email', batch: newBatch, count: picked, icon: '📧' });
         return { success: true, picked, newBatch, message: `Marked Remind Email batch ${newBatch} for ${picked} rows.` };
+    },
+
+    /**
+     * Delete SMS batch - clear batch column for specified batch number
+     */
+    deleteSmsBatch(batchNumber) {
+        const config = ConfigManager.getAll();
+        const data = DataManager.getData();
+        const batchCol = DataManager.findColumn(config.BATCH_COL);
+        const contentCol = DataManager.findColumn(config.CONTENT_COL);
+
+        if (!batchCol) {
+            return { success: false, message: 'Không tìm thấy cột batch SMS.' };
+        }
+
+        DataManager.saveUndoState();
+
+        let deleted = 0;
+        data.forEach(row => {
+            if (row[batchCol] === batchNumber) {
+                row[batchCol] = '';
+                if (contentCol) row[contentCol] = ''; // Also clear content
+                deleted++;
+            }
+        });
+
+        // Update batch tracking
+        DataManager.smsBatches.delete(batchNumber);
+
+        ConfigManager.addActionHistory({
+            type: 'delete_batch',
+            batch: batchNumber,
+            count: deleted,
+            icon: '🗑️'
+        });
+
+        return {
+            success: true,
+            deleted: deleted,
+            message: `Đã xóa SMS batch ${batchNumber} (${deleted} dòng).`
+        };
+    },
+
+    /**
+     * Delete Email batch - clear batch column for specified batch number
+     */
+    deleteEmailBatch(batchNumber) {
+        const config = ConfigManager.getAll();
+        const data = DataManager.getData();
+        const batchCol = DataManager.findColumn(config.EMAIL_BATCH_COL);
+
+        if (!batchCol) {
+            return { success: false, message: 'Không tìm thấy cột batch Email.' };
+        }
+
+        DataManager.saveUndoState();
+
+        let deleted = 0;
+        data.forEach(row => {
+            if (row[batchCol] === batchNumber) {
+                row[batchCol] = '';
+                deleted++;
+            }
+        });
+
+        // Update batch tracking
+        DataManager.emailBatches.delete(batchNumber);
+
+        ConfigManager.addActionHistory({
+            type: 'delete_batch',
+            batch: batchNumber,
+            count: deleted,
+            icon: '🗑️'
+        });
+
+        return {
+            success: true,
+            deleted: deleted,
+            message: `Đã xóa Email batch ${batchNumber} (${deleted} dòng).`
+        };
     }
 };
 

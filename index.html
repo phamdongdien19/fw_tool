@@ -75,6 +75,22 @@
                             New</button>
                         <span class="save-indicator" id="saveIndicator">✓ Saved</span>
                     </div>
+                    <div class="notification-bell" id="notificationBell">
+                        <button class="btn btn-icon notification-btn" onclick="toggleNotificationPanel()"
+                            title="Notifications">
+                            <img src="assets/icons/bell.png" alt="Notifications" class="bell-icon">
+                            <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                        </button>
+                        <div class="notification-panel" id="notificationPanel" style="display: none;">
+                            <div class="notification-header">
+                                <span>Thông báo</span>
+                                <button class="btn btn-xs btn-outline" onclick="clearNotifications()">Clear</button>
+                            </div>
+                            <div class="notification-list" id="notificationList">
+                                <div class="notification-empty">Không có thông báo mới</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="file-info" id="fileInfo">
                         <span class="file-name">No file loaded</span>
                     </div>
@@ -476,6 +492,19 @@
                                     1000</button>
                                 <button class="btn btn-email"
                                     onclick="markBatchPrompt('remind_email')">Custom...</button>
+                            </div>
+                        </div>
+                        <div class="action-group delete-batch-group">
+                            <label>🗑️ Delete Batch:</label>
+                            <div class="btn-group">
+                                <select id="deleteBatchType" class="form-control form-control-sm">
+                                    <option value="sms">SMS</option>
+                                    <option value="email">Email</option>
+                                </select>
+                                <select id="deleteBatchNumber" class="form-control form-control-sm">
+                                    <option value="">-- Select --</option>
+                                </select>
+                                <button class="btn btn-danger btn-sm" onclick="deleteBatchAction()">Delete</button>
                             </div>
                         </div>
                     </div>
