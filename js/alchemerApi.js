@@ -532,9 +532,8 @@ const AlchemerAPI = {
             sampleUrlVars: sampleUrlVars,
             statuses: statusCounts,
             Disqualified: [...plidStatusMap.values()].filter(s => s === 'Disqualified').length
-        }
-    };
-},
+        };
+    },
 
     /**
      * Apply cached status to current DataManager data
@@ -591,24 +590,24 @@ const AlchemerAPI = {
         };
     },
 
-        /**
-         * Get cached status summary
-         */
-        getCachedStatusSummary() {
-    if (!this.apiResponseCache.plidStatusMap) {
-        return null;
-    }
+    /**
+     * Get cached status summary
+     */
+    getCachedStatusSummary() {
+        if (!this.apiResponseCache.plidStatusMap) {
+            return null;
+        }
 
-    const statuses = [...this.apiResponseCache.plidStatusMap.values()];
-    return {
-        surveyId: this.apiResponseCache.surveyId,
-        fetchedAt: this.apiResponseCache.fetchedAt,
-        total: this.apiResponseCache.plidStatusMap.size,
-        Complete: statuses.filter(s => s === 'Complete').length,
-        Partial: statuses.filter(s => s === 'Partial').length,
-        Disqualified: statuses.filter(s => s === 'Disqualified').length
-    };
-}
+        const statuses = [...this.apiResponseCache.plidStatusMap.values()];
+        return {
+            surveyId: this.apiResponseCache.surveyId,
+            fetchedAt: this.apiResponseCache.fetchedAt,
+            total: this.apiResponseCache.plidStatusMap.size,
+            Complete: statuses.filter(s => s === 'Complete').length,
+            Partial: statuses.filter(s => s === 'Partial').length,
+            Disqualified: statuses.filter(s => s === 'Disqualified').length
+        };
+    }
 };
 
 // Initialize when script loads
