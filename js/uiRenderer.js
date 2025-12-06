@@ -306,13 +306,33 @@ const UIRenderer = {
             `;
         }
 
-        // Default text input
+        // Default text input with Autocomplete (Datalist)
+        const listId = `list-${condition.id}`.replace('.', '-');
+        let dataListHtml = '';
+
+        if (condition.column) {
+            const uniqueValues = DataManager.getUniqueValues(condition.column);
+            // Limit to 100 simple values for performance
+            const simpleValues = uniqueValues
+                .map(v => String(v))
+                .filter(v => v.length < 50) // Skip very long text
+                .slice(0, 100);
+
+            dataListHtml = `
+                <datalist id="${listId}">
+                    ${simpleValues.map(v => `<option value="${this.escapeHtml(v)}">`).join('')}
+                </datalist>
+            `;
+        }
+
         return `
             <input type="text" class="form-control form-control-sm filter-value" 
                 value="${this.escapeHtml(condition.value || '')}"
                 placeholder="Value..."
+                list="${listId}"
                 onchange="updateFilterCondition(${condition.id}, 'value', this.value)"
                 ${['isEmpty', 'isNotEmpty'].includes(condition.operator) ? 'disabled' : ''}>
+            ${dataListHtml}
         `;
     },
 

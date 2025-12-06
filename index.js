@@ -272,8 +272,8 @@ function addFilterCondition() {
 function updateFilterCondition(id, field, value) {
     FilterEngine.updateCondition(id, { [field]: value });
 
-    // Re-render if operator changes (to enable/disable value input)
-    if (field === 'operator') {
+    // Re-render if operator or column changes (to update inputs/datalists)
+    if (field === 'operator' || field === 'column') {
         UIRenderer.renderFilterConditions();
     }
 }
