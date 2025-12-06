@@ -21,34 +21,85 @@ const ProjectManager = {
      * Initialize Project Manager
      */
     async init() {
-        await this.loadProjects();
+        // Load from localStorage first (instant)
+        this.loadFromLocalStorage();
         this.loadActiveProject();
-        console.log('ProjectManager initialized with', this.projects.length, 'projects');
+        console.log('ProjectManager initialized with', this.projects.length, 'projects (local)');
+
+        // Then sync from server in background (don't await)
+        this.syncFromServer();
     },
 
     /**
-     * Load projects from server
+     * Load projects from localStorage (fast)
      */
-    async loadProjects() {
+    loadFromLocalStorage() {
+        try {
+            const stored = localStorage.getItem('fw_tools_projects');
+            this.projects = stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            this.projects = [];
+        }
+    },
+
+    /**
+     * Sync projects from server (background)
+     */
+    async syncFromServer() {
         try {
             this.isLoading = true;
-            const response = await fetch(this.API_URL);
+
+            // Add timeout of 5 seconds
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            const response = await fetch(this.API_URL, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
             const result = await response.json();
-            this.projects = result.projects || [];
-            this.isLoading = false;
-            return this.projects;
-        } catch (e) {
-            console.error('Failed to load projects from server:', e);
-            // Fallback to localStorage
-            try {
-                const stored = localStorage.getItem('fw_tools_projects');
-                this.projects = stored ? JSON.parse(stored) : [];
-            } catch (e2) {
-                this.projects = [];
+            const serverProjects = result.projects || [];
+
+            // Merge server data with local (server wins for same ID)
+            if (serverProjects.length > 0) {
+                const merged = [...serverProjects];
+                // Add any local-only projects
+                this.projects.forEach(localP => {
+                    if (!merged.find(p => p.id === localP.id)) {
+                        merged.push(localP);
+                    }
+                });
+                this.projects = merged;
+                this.saveToLocalStorage();
+
+                // Re-render if function exists
+                if (typeof renderProjectsList === 'function') {
+                    renderProjectsList();
+                }
             }
+        } catch (e) {
+            console.warn('Server sync failed (using local data):', e.message);
+        } finally {
             this.isLoading = false;
-            return this.projects;
         }
+    },
+
+    /**
+     * Save projects to localStorage
+     */
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem('fw_tools_projects', JSON.stringify(this.projects));
+        } catch (e) {
+            console.error('Failed to save to localStorage:', e);
+        }
+    },
+
+    /**
+     * Load projects (for compatibility - now just returns local)
+     */
+    async loadProjects() {
+        this.loadFromLocalStorage();
+        return this.projects;
     },
 
     /**
@@ -142,6 +193,14 @@ const ProjectManager = {
 
         // Add to local cache first
         this.projects.unshift(project);
+
+        // Save to localStorage immediately
+        this.saveToLocalStorage();
+
+        // Refresh the Filter & Batch dropdown
+        if (typeof StorageManager !== 'undefined' && StorageManager.loadProjectList) {
+            StorageManager.loadProjectList();
+        }
 
         // Save to server (async, don't block)
         this.saveProjectToServer(project).catch(e => {
