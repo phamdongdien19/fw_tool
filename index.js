@@ -15,6 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
     FilterEngine.init();
     UIRenderer.init();
 
+    // Initialize StorageManager (for server persistence)
+    if (typeof StorageManager !== 'undefined') {
+        StorageManager.init();
+    }
+
     // Setup event listeners
     setupNavigation();
     setupSidebar();
@@ -30,6 +35,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('FW Tools initialized successfully');
 });
+
+// ===== Project Management =====
+function handleProjectSelect(projectName) {
+    if (projectName) {
+        StorageManager.loadProject(projectName);
+    }
+}
+
+function saveCurrentProject() {
+    if (!DataManager.hasData()) {
+        UIRenderer.showToast('Không có dữ liệu để lưu.', 'warning');
+        return;
+    }
+
+    let projectName = StorageManager.currentProject;
+
+    if (!projectName) {
+        projectName = prompt('Nhập tên project:');
+        if (!projectName) return;
+    }
+
+    StorageManager.saveProject(projectName);
+}
+
+function createNewProject() {
+    if (DataManager.hasData() && !confirm('Tạo project mới sẽ xóa dữ liệu hiện tại. Tiếp tục?')) {
+        return;
+    }
+
+    const projectName = prompt('Nhập tên project mới:');
+    if (!projectName) return;
+
+    DataManager.clear();
+    StorageManager.currentProject = projectName;
+    StorageManager.isDirty = false;
+    StorageManager.updateSaveIndicator('saved');
+
+    document.getElementById('projectSelect').value = '';
+    UIRenderer.updateFileInfo();
+    UIRenderer.renderDataTable();
+    UIRenderer.showToast(`Project "${projectName}" đã được tạo. Import file để bắt đầu.`, 'info');
+}
 
 // ===== Navigation =====
 function setupNavigation() {
@@ -344,6 +391,11 @@ function markBatch(type, limit) {
         UIRenderer.renderDataTable();
         UIRenderer.renderDashboard();
         updateUndoRedoButtons();
+
+        // Trigger auto-save
+        if (typeof StorageManager !== 'undefined') {
+            StorageManager.markDirty();
+        }
 
         // Auto export if configured
         const config = ConfigManager.getAll();
@@ -809,12 +861,61 @@ window.updateMultiSelect = function (conditionId, checkbox) {
 
 window.filterMultiSelectOptions = function (input) {
     const filter = input.value.toLowerCase();
-    const options = input.nextElementSibling.querySelectorAll('.dropdown-item');
+    const container = input.closest('.multi-select-dropdown');
+    const options = container.querySelectorAll('.multi-select-options .dropdown-item');
 
     options.forEach(opt => {
         const text = opt.querySelector('span').textContent.toLowerCase();
         opt.style.display = text.includes(filter) ? 'flex' : 'none';
     });
+};
+
+// Select All / Deselect All in multi-select
+window.selectAllMulti = function (conditionId, dropdownId, selectAll) {
+    const container = document.getElementById(dropdownId);
+    if (!container) return;
+
+    const checkboxes = container.querySelectorAll('.multi-select-options input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll;
+    });
+
+    // Update trigger text and filter condition
+    const values = selectAll
+        ? Array.from(checkboxes).map(cb => cb.value)
+        : [];
+
+    const trigger = container.querySelector('.multi-select-trigger');
+    if (trigger) {
+        trigger.textContent = values.length > 0 ? `${values.length} selected` : 'Select values...';
+    }
+
+    FilterEngine.updateCondition(parseFloat(conditionId), { value: values });
+};
+
+// Select only currently visible/matched items
+window.selectMatchedMulti = function (conditionId, dropdownId) {
+    const container = document.getElementById(dropdownId);
+    if (!container) return;
+
+    const checkboxes = container.querySelectorAll('.multi-select-options .dropdown-item');
+    const values = [];
+
+    checkboxes.forEach(item => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        // Only select visible items
+        if (item.style.display !== 'none') {
+            checkbox.checked = true;
+            values.push(checkbox.value);
+        }
+    });
+
+    const trigger = container.querySelector('.multi-select-trigger');
+    if (trigger) {
+        trigger.textContent = values.length > 0 ? `${values.length} selected` : 'Select values...';
+    }
+
+    FilterEngine.updateCondition(parseFloat(conditionId), { value: values });
 };
 
 // Close dropdowns when clicking outside

@@ -1,0 +1,13 @@
+{
+    "name": "fw-tools-data-collection",
+    "version": "1.0.0",
+    "description": "FW Tools - Data Collection App with Vercel Blob Storage",
+    "scripts": {
+        "dev": "vercel dev",
+        "build": "echo 'No build step required'",
+        "start": "vercel dev"
+    },
+    "dependencies": {
+        "@vercel/blob": "^0.23.0"
+    }
+}

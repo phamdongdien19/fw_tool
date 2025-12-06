@@ -64,6 +64,17 @@
                     <h1 class="page-title" id="pageTitle">Dashboard</h1>
                 </div>
                 <div class="header-right">
+                    <div class="project-manager">
+                        <select id="projectSelect" class="form-control form-control-sm"
+                            onchange="handleProjectSelect(this.value)">
+                            <option value="">-- Chọn Project --</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="saveCurrentProject()" title="Save Project">💾
+                            Save</button>
+                        <button class="btn btn-sm btn-secondary" onclick="createNewProject()" title="New Project">+
+                            New</button>
+                        <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+                    </div>
                     <div class="file-info" id="fileInfo">
                         <span class="file-name">No file loaded</span>
                     </div>
@@ -690,6 +701,7 @@
     <script src="js/exportManager.js"></script>
     <script src="js/alchemerApi.js"></script>
     <script src="js/uiRenderer.js"></script>
+    <script src="js/storageManager.js"></script>
     <script src="index.js"></script>
 </body>
 

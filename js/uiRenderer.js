@@ -298,6 +298,11 @@ const UIRenderer = {
                             onclick="event.stopPropagation()"
                             onkeyup="filterMultiSelectOptions(this)"
                         >
+                        <div class="multi-select-actions" onclick="event.stopPropagation()">
+                            <button type="button" class="btn btn-xs btn-outline" onclick="selectAllMulti('${condition.id}', '${dropdownId}', true)">All</button>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="selectAllMulti('${condition.id}', '${dropdownId}', false)">None</button>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="selectMatchedMulti('${condition.id}', '${dropdownId}')">Matched</button>
+                        </div>
                         <div class="multi-select-options">
                             ${optionsHtml}
                         </div>

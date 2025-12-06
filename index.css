@@ -378,6 +378,47 @@ body {
     display: none;
 }
 
+/* ===== Project Manager ===== */
+.project-manager {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 16px;
+}
+
+.project-manager select {
+    width: 180px;
+}
+
+.save-indicator {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.save-indicator.saved {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--color-success);
+}
+
+.save-indicator.saving {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--color-primary);
+}
+
+.save-indicator.unsaved {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning);
+}
+
+.save-indicator.error {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--color-danger);
+}
+
+
 /* ===== Main Content ===== */
 .main-content {
     flex: 1;
@@ -1338,6 +1379,11 @@ textarea.form-control {
     font-size: 12px;
 }
 
+.btn-xs {
+    padding: 3px 8px;
+    font-size: 11px;
+}
+
 .btn-lg {
     padding: 14px 28px;
     font-size: 16px;
@@ -1709,6 +1755,17 @@ textarea.form-control {
     width: 100%;
     padding: 6px;
     font-size: 12px;
+}
+
+.multi-select-actions {
+    display: flex;
+    gap: 4px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.multi-select-actions .btn {
+    flex: 1;
 }
 
 .multi-select-options {
