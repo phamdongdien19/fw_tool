@@ -118,6 +118,7 @@ function switchView(viewName) {
         dashboard: 'Dashboard',
         import: 'Import Data',
         urlImport: 'URL Import',
+        projects: 'Projects',
         data: 'Data View',
         export: 'Export',
         config: 'Configuration'
@@ -136,9 +137,13 @@ function switchView(viewName) {
             }
             loadUrlHistoryList();
             break;
+        case 'projects':
+            renderProjectsList();
+            break;
         case 'data':
             UIRenderer.renderDataTable();
             UIRenderer.renderFilterConditions();
+            renderProjectInfoPanel();
             break;
         case 'export':
             UIRenderer.renderExportOptions();
@@ -1721,33 +1726,99 @@ function saveUrlToHistory(url, projectName, rowCount) {
 }
 
 function loadUrlHistoryList() {
-    const select = document.getElementById('urlHistorySelect');
-    if (!select) return;
+    const listContainer = document.getElementById('urlHistoryList');
+    if (!listContainer) return;
 
     const history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
 
-    select.innerHTML = '<option value="">-- Chọn để xem lại --</option>' +
-        history.map((h, i) => {
-            const date = new Date(h.timestamp).toLocaleDateString('vi-VN');
-            const name = h.projectName || 'Unknown';
-            return `<option value="${i}">${name} (${h.rowCount} rows) - ${date}</option>`;
-        }).join('');
+    if (history.length === 0) {
+        listContainer.innerHTML = '<div class="url-history-empty">Chưa có lịch sử import</div>';
+        return;
+    }
+
+    listContainer.innerHTML = history.map((h, i) => {
+        const date = new Date(h.timestamp).toLocaleDateString('vi-VN');
+        const time = new Date(h.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        const name = h.projectName || 'Unknown';
+        return `
+            <div class="url-history-item" onclick="loadUrlHistoryItem(${i})">
+                <div class="url-history-info">
+                    <div class="url-history-name" title="${h.url}">${name}</div>
+                    <div class="url-history-meta">
+                        <span>${h.rowCount} rows</span>
+                        <span>${date} ${time}</span>
+                    </div>
+                </div>
+                <button class="url-history-delete" onclick="event.stopPropagation(); deleteUrlHistoryItem(${i})" title="Xóa">✕</button>
+            </div>
+        `;
+    }).join('');
 }
 
-async function loadUrlHistory(index) {
-    if (index === '') return;
-
+async function loadUrlHistoryItem(index) {
     const history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
-    const item = history[parseInt(index)];
+    const item = history[index];
 
     if (item) {
         document.getElementById('urlModuleInput').value = item.url;
         if (document.getElementById('urlProjectName')) {
             document.getElementById('urlProjectName').value = item.projectName || '';
         }
+        // Hide history panel
+        const panel = document.getElementById('urlHistoryList');
+        if (panel) panel.style.display = 'none';
+        document.getElementById('urlHistoryToggleIcon').textContent = '▼';
+
         await importUrlModule();
     }
 }
+
+function deleteUrlHistoryItem(index) {
+    let history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
+    const deleted = history[index];
+
+    if (deleted && confirm(`Xóa "${deleted.projectName || 'Unknown'}" khỏi lịch sử?`)) {
+        history.splice(index, 1);
+        localStorage.setItem(URL_HISTORY_KEY, JSON.stringify(history));
+        loadUrlHistoryList();
+        UIRenderer.showToast('Đã xóa khỏi lịch sử', 'info');
+    }
+}
+
+function toggleUrlHistoryPanel() {
+    const panel = document.getElementById('urlHistoryList');
+    const icon = document.getElementById('urlHistoryToggleIcon');
+
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        icon.textContent = '▲';
+        loadUrlHistoryList(); // Refresh list when opening
+    } else {
+        panel.style.display = 'none';
+        icon.textContent = '▼';
+    }
+}
+
+function clearAllUrlHistory() {
+    const history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
+
+    if (history.length === 0) {
+        UIRenderer.showToast('Lịch sử đã trống', 'info');
+        return;
+    }
+
+    if (confirm(`Xóa tất cả ${history.length} mục trong lịch sử?`)) {
+        localStorage.removeItem(URL_HISTORY_KEY);
+        loadUrlHistoryList();
+        UIRenderer.showToast('Đã xóa tất cả lịch sử', 'success');
+    }
+}
+
+// Make URL history functions global
+window.loadUrlHistoryItem = loadUrlHistoryItem;
+window.deleteUrlHistoryItem = deleteUrlHistoryItem;
+window.toggleUrlHistoryPanel = toggleUrlHistoryPanel;
+window.clearAllUrlHistory = clearAllUrlHistory;
 
 function escapeHtml(str) {
     const div = document.createElement('div');
@@ -1921,6 +1992,9 @@ async function deleteCurrentProject() {
 // Initialize starred projects on load
 document.addEventListener('DOMContentLoaded', () => {
     renderStarredProjects();
+    if (typeof ProjectManager !== 'undefined') {
+        ProjectManager.init();
+    }
 });
 
 // Make starred functions global
@@ -1929,3 +2003,330 @@ window.loadStarredProject = loadStarredProject;
 window.renderStarredProjects = renderStarredProjects;
 window.updateProjectStarButton = updateProjectStarButton;
 window.deleteCurrentProject = deleteCurrentProject;
+
+// ===== Project Management Module =====
+let selectedProjectId = null;
+
+function renderProjectsList() {
+    const listContainer = document.getElementById('projectsList');
+    const countBadge = document.getElementById('projectCount');
+    if (!listContainer || typeof ProjectManager === 'undefined') return;
+
+    const projects = ProjectManager.getAllProjects();
+    countBadge.textContent = projects.length;
+
+    if (projects.length === 0) {
+        listContainer.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">📂</span>
+                <p>Chưa có project nào</p>
+                <button class="btn btn-outline" onclick="openProjectModal()">
+                    Tạo project đầu tiên
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    const activeId = ProjectManager.activeProjectId;
+
+    listContainer.innerHTML = projects.map(p => {
+        const isActive = p.id === activeId;
+        const isSelected = p.id === selectedProjectId;
+        const quotaInfo = p.quotas && p.quotas.length > 0
+            ? `${p.quotas.reduce((s, q) => s + q.count, 0)}/${p.quotas.reduce((s, q) => s + q.limit, 0)}`
+            : '';
+
+        return `
+            <div class="project-item ${isSelected ? 'active' : ''}" onclick="selectProject('${p.id}')">
+                <div class="project-item-icon">📊</div>
+                <div class="project-item-info">
+                    <div class="project-item-name">${p.name}</div>
+                    <div class="project-item-meta">
+                        <span>Survey: ${p.surveyId || '-'}</span>
+                        ${quotaInfo ? `<span>${quotaInfo}</span>` : ''}
+                    </div>
+                </div>
+                ${isActive ? '<span class="project-item-badge active">Active</span>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function selectProject(projectId) {
+    selectedProjectId = projectId;
+    renderProjectsList();
+    renderProjectDetail(projectId);
+}
+
+function renderProjectDetail(projectId) {
+    const detailCard = document.getElementById('projectDetailCard');
+    const noSelected = document.getElementById('noProjectSelected');
+
+    if (!projectId || typeof ProjectManager === 'undefined') {
+        detailCard.style.display = 'none';
+        noSelected.style.display = 'block';
+        return;
+    }
+
+    const project = ProjectManager.getProject(projectId);
+    if (!project) {
+        detailCard.style.display = 'none';
+        noSelected.style.display = 'block';
+        return;
+    }
+
+    detailCard.style.display = 'block';
+    noSelected.style.display = 'none';
+
+    // Update detail fields
+    document.getElementById('projectDetailTitle').textContent = project.name;
+    document.getElementById('projectSurveyId').textContent = project.surveyId || '-';
+    document.getElementById('projectTarget').textContent = project.target ? `${project.target} responses` : '-';
+    document.getElementById('projectCriteria').textContent = project.criteria || 'Chưa có tiêu chí';
+
+    // Notes section
+    const notesSection = document.getElementById('projectNotesSection');
+    const notesText = document.getElementById('projectNotes');
+    if (project.notes) {
+        notesSection.style.display = 'block';
+        notesText.textContent = project.notes;
+    } else {
+        notesSection.style.display = 'none';
+    }
+
+    // Last fetch time
+    const lastFetch = document.getElementById('quotaLastFetch');
+    if (project.lastQuotaFetch) {
+        const date = new Date(project.lastQuotaFetch);
+        lastFetch.textContent = `Cập nhật: ${date.toLocaleString('vi-VN')}`;
+    } else {
+        lastFetch.textContent = 'Chưa fetch';
+    }
+
+    // Render quotas
+    renderProjectQuotas(project);
+}
+
+function renderProjectQuotas(project) {
+    const quotaList = document.getElementById('projectQuotaList');
+    const quotaSummary = document.getElementById('quotaSummary');
+
+    if (!project.quotas || project.quotas.length === 0) {
+        quotaList.innerHTML = `
+            <div class="empty-state small">
+                <p>Click "Refresh" để lấy quota từ Alchemer</p>
+            </div>
+        `;
+        quotaSummary.style.display = 'none';
+        return;
+    }
+
+    quotaList.innerHTML = project.quotas.map(q => {
+        const percent = q.limit > 0 ? Math.round((q.count / q.limit) * 100) : 0;
+        let progressClass = 'low';
+        if (percent >= 100) progressClass = 'complete';
+        else if (percent >= 70) progressClass = 'high';
+        else if (percent >= 40) progressClass = 'medium';
+
+        return `
+            <div class="quota-item">
+                <div class="quota-item-header">
+                    <span class="quota-item-name">${q.name}</span>
+                    <span class="quota-item-count">${q.count}/${q.limit} (còn ${q.remaining})</span>
+                </div>
+                <div class="quota-progress">
+                    <div class="quota-progress-fill ${progressClass}" style="width: ${Math.min(percent, 100)}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Summary
+    const totalCompleted = project.quotas.reduce((s, q) => s + q.count, 0);
+    const totalRemaining = project.quotas.reduce((s, q) => s + q.remaining, 0);
+
+    document.getElementById('quotaTotalCompleted').textContent = totalCompleted;
+    document.getElementById('quotaTotalRemaining').textContent = totalRemaining;
+    quotaSummary.style.display = 'flex';
+}
+
+async function refreshProjectQuotas() {
+    if (!selectedProjectId) {
+        UIRenderer.showToast('Vui lòng chọn project', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('refreshQuotaBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Loading...';
+
+    try {
+        const result = await ProjectManager.fetchQuotas(selectedProjectId);
+        renderProjectDetail(selectedProjectId);
+        UIRenderer.showToast(`Đã cập nhật ${result.quotas.length} quotas`, 'success');
+    } catch (error) {
+        console.error('Fetch quotas error:', error);
+        UIRenderer.showToast(`Lỗi: ${error.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Refresh';
+    }
+}
+
+function openProjectModal(editId = null) {
+    const project = editId ? ProjectManager.getProject(editId) : null;
+    const isEdit = !!project;
+
+    const modalBody = `
+        <div class="form-group">
+            <label>Tên Project *</label>
+            <input type="text" id="projectNameInput" class="form-control" 
+                value="${isEdit ? project.name : ''}" placeholder="VD: Survey ABC - Wave 1">
+        </div>
+        <div class="form-group">
+            <label>Survey ID (Alchemer)</label>
+            <input type="text" id="projectSurveyIdInput" class="form-control" 
+                value="${isEdit ? project.surveyId : ''}" placeholder="VD: 8154556">
+        </div>
+        <div class="form-group">
+            <label>Target (số người)</label>
+            <input type="number" id="projectTargetInput" class="form-control" 
+                value="${isEdit ? project.target : ''}" placeholder="VD: 500">
+        </div>
+        <div class="form-group">
+            <label>Tiêu chí dự án</label>
+            <textarea id="projectCriteriaInput" class="form-control" rows="3" 
+                placeholder="VD: Nam/Nữ 18-45, TPHCM, thu nhập 10-20tr">${isEdit ? project.criteria : ''}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Ghi chú</label>
+            <textarea id="projectNotesInput" class="form-control" rows="2" 
+                placeholder="VD: Ưu tiên nhóm 25-35 tuổi">${isEdit ? project.notes : ''}</textarea>
+        </div>
+    `;
+
+    showModal(
+        isEdit ? 'Chỉnh sửa Project' : 'Tạo Project mới',
+        modalBody,
+        () => saveProjectFromModal(editId)
+    );
+}
+
+function saveProjectFromModal(editId = null) {
+    const name = document.getElementById('projectNameInput').value.trim();
+    const surveyId = document.getElementById('projectSurveyIdInput').value.trim();
+    const target = document.getElementById('projectTargetInput').value;
+    const criteria = document.getElementById('projectCriteriaInput').value.trim();
+    const notes = document.getElementById('projectNotesInput').value.trim();
+
+    if (!name) {
+        UIRenderer.showToast('Vui lòng nhập tên project', 'warning');
+        return;
+    }
+
+    if (editId) {
+        ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes });
+        UIRenderer.showToast('Đã cập nhật project', 'success');
+    } else {
+        const newProject = ProjectManager.createProject({ name, surveyId, target, criteria, notes });
+        selectedProjectId = newProject.id;
+        UIRenderer.showToast('Đã tạo project mới', 'success');
+    }
+
+    closeModal();
+    renderProjectsList();
+    if (selectedProjectId) {
+        renderProjectDetail(selectedProjectId);
+    }
+}
+
+function editCurrentProject() {
+    if (selectedProjectId) {
+        openProjectModal(selectedProjectId);
+    }
+}
+
+function deleteCurrentProjectMgmt() {
+    if (!selectedProjectId) return;
+
+    const project = ProjectManager.getProject(selectedProjectId);
+    if (!project) return;
+
+    if (confirm(`Xóa project "${project.name}"?\nHành động này không thể hoàn tác.`)) {
+        ProjectManager.deleteProject(selectedProjectId);
+        selectedProjectId = null;
+        renderProjectsList();
+        renderProjectDetail(null);
+        UIRenderer.showToast('Đã xóa project', 'success');
+    }
+}
+
+function setAsActiveProject() {
+    if (!selectedProjectId) return;
+
+    ProjectManager.setActiveProject(selectedProjectId);
+    renderProjectsList();
+    UIRenderer.showToast('Đã set project active', 'success');
+
+    // Update project info panel in data view
+    renderProjectInfoPanel();
+}
+
+// Project Info Panel for Data View
+function renderProjectInfoPanel() {
+    const container = document.getElementById('projectInfoPanelContainer');
+    if (!container || typeof ProjectManager === 'undefined') return;
+
+    const activeProject = ProjectManager.getActiveProject();
+    if (!activeProject) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const summary = ProjectManager.getQuotaSummary(activeProject.id);
+
+    container.innerHTML = `
+        <div class="project-info-panel">
+            <div class="project-info-panel-header" onclick="toggleProjectInfoPanel()">
+                <h4>📋 ${activeProject.name}</h4>
+                <button class="project-info-panel-toggle" id="projectInfoToggle">−</button>
+            </div>
+            <div class="project-info-panel-body" id="projectInfoBody">
+                ${activeProject.criteria ? `<div class="info-line"><strong>📌 Tiêu chí:</strong> ${activeProject.criteria}</div>` : ''}
+                ${activeProject.notes ? `<div class="info-line"><strong>💡</strong> ${activeProject.notes}</div>` : ''}
+                ${summary ? `
+                    <div class="quota-mini">
+                        <span class="quota-mini-item">Hoàn thành: ${summary.totalCompleted}/${summary.totalLimit}</span>
+                        <span class="quota-mini-item remaining">Còn thiếu: ${summary.totalRemaining}</span>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function toggleProjectInfoPanel() {
+    const body = document.getElementById('projectInfoBody');
+    const toggle = document.getElementById('projectInfoToggle');
+    if (body && toggle) {
+        if (body.style.display === 'none') {
+            body.style.display = 'block';
+            toggle.textContent = '−';
+        } else {
+            body.style.display = 'none';
+            toggle.textContent = '+';
+        }
+    }
+}
+
+// Make project functions global
+window.openProjectModal = openProjectModal;
+window.selectProject = selectProject;
+window.editCurrentProject = editCurrentProject;
+window.deleteCurrentProjectMgmt = deleteCurrentProjectMgmt;
+window.refreshProjectQuotas = refreshProjectQuotas;
+window.setAsActiveProject = setAsActiveProject;
+window.renderProjectsList = renderProjectsList;
+window.renderProjectInfoPanel = renderProjectInfoPanel;
+window.toggleProjectInfoPanel = toggleProjectInfoPanel;

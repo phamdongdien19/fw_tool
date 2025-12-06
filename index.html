@@ -37,6 +37,10 @@
                     <span class="nav-icon">🌐</span>
                     <span class="nav-text">URL Import</span>
                 </a>
+                <a href="#" class="nav-item" data-view="projects">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Projects</span>
+                </a>
                 <a href="#" class="nav-item" data-view="data">
                     <span class="nav-icon">📋</span>
                     <span class="nav-text">Filter & Batch</span>
@@ -446,11 +450,19 @@
                                     </div>
                                 </div>
                                 <div class="url-history-section">
-                                    <label>📜 Lịch sử import:</label>
-                                    <select id="urlHistorySelect" class="form-control"
-                                        onchange="loadUrlHistory(this.value)">
-                                        <option value="">-- Chọn để xem lại --</option>
-                                    </select>
+                                    <div class="url-history-header">
+                                        <label>📜 Lịch sử import:</label>
+                                        <div class="url-history-actions">
+                                            <button class="btn btn-xs btn-outline" onclick="toggleUrlHistoryPanel()">
+                                                <span id="urlHistoryToggleIcon">▼</span>
+                                            </button>
+                                            <button class="btn btn-xs btn-outline" onclick="clearAllUrlHistory()"
+                                                title="Xóa tất cả">🗑️</button>
+                                        </div>
+                                    </div>
+                                    <div class="url-history-list" id="urlHistoryList" style="display: none;">
+                                        <!-- History items will be rendered here -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -548,8 +560,130 @@
                     </div>
                 </section>
 
+                <!-- Projects View -->
+                <section class="view" id="projectsView">
+                    <div class="projects-container">
+                        <div class="projects-header">
+                            <h2>📊 Project Management</h2>
+                            <button class="btn btn-primary" onclick="openProjectModal()">
+                                ➕ New Project
+                            </button>
+                        </div>
+
+                        <div class="projects-layout">
+                            <!-- Project List -->
+                            <div class="projects-list-panel">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3>📁 Projects</h3>
+                                        <span class="badge" id="projectCount">0</span>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="projects-list" id="projectsList">
+                                            <div class="empty-state">
+                                                <span class="empty-icon">📂</span>
+                                                <p>Chưa có project nào</p>
+                                                <button class="btn btn-outline" onclick="openProjectModal()">
+                                                    Tạo project đầu tiên
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Project Detail -->
+                            <div class="project-detail-panel">
+                                <div class="card" id="projectDetailCard" style="display: none;">
+                                    <div class="card-header">
+                                        <h3 id="projectDetailTitle">Project Detail</h3>
+                                        <div class="project-actions">
+                                            <button class="btn btn-xs btn-outline" onclick="editCurrentProject()"
+                                                title="Edit">✏️</button>
+                                            <button class="btn btn-xs btn-outline btn-danger"
+                                                onclick="deleteCurrentProjectMgmt()" title="Delete">🗑️</button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Project Info -->
+                                        <div class="project-info-section">
+                                            <div class="info-row">
+                                                <span class="info-label">Survey ID:</span>
+                                                <span class="info-value" id="projectSurveyId">-</span>
+                                            </div>
+                                            <div class="info-row">
+                                                <span class="info-label">Target:</span>
+                                                <span class="info-value" id="projectTarget">-</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Criteria Section -->
+                                        <div class="project-criteria-section">
+                                            <h4>📋 Tiêu chí dự án</h4>
+                                            <p class="criteria-text" id="projectCriteria">-</p>
+                                        </div>
+
+                                        <!-- Notes Section -->
+                                        <div class="project-notes-section" id="projectNotesSection"
+                                            style="display: none;">
+                                            <h4>💡 Ghi chú</h4>
+                                            <p class="notes-text" id="projectNotes">-</p>
+                                        </div>
+
+                                        <!-- Quota Section -->
+                                        <div class="project-quota-section">
+                                            <div class="quota-header">
+                                                <h4>📊 Quota Status</h4>
+                                                <button class="btn btn-xs btn-primary" onclick="refreshProjectQuotas()"
+                                                    id="refreshQuotaBtn">
+                                                    🔄 Refresh
+                                                </button>
+                                            </div>
+                                            <div class="quota-last-fetch" id="quotaLastFetch">Chưa fetch</div>
+                                            <div class="quota-list" id="projectQuotaList">
+                                                <div class="empty-state small">
+                                                    <p>Click "Refresh" để lấy quota từ Alchemer</p>
+                                                </div>
+                                            </div>
+                                            <div class="quota-summary" id="quotaSummary" style="display: none;">
+                                                <div class="summary-item">
+                                                    <span class="summary-label">Tổng hoàn thành:</span>
+                                                    <span class="summary-value" id="quotaTotalCompleted">0</span>
+                                                </div>
+                                                <div class="summary-item">
+                                                    <span class="summary-label">Còn thiếu:</span>
+                                                    <span class="summary-value highlight"
+                                                        id="quotaTotalRemaining">0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <button class="btn btn-secondary" onclick="setAsActiveProject()">
+                                            ⭐ Set as Active
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- No Project Selected -->
+                                <div class="card" id="noProjectSelected">
+                                    <div class="card-body">
+                                        <div class="empty-state">
+                                            <span class="empty-icon">👈</span>
+                                            <p>Chọn một project từ danh sách để xem chi tiết</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Data View (Filter & Batch) -->
                 <section class="view" id="dataView">
+                    <!-- Project Info Panel (shows active project criteria) -->
+                    <div id="projectInfoPanelContainer"></div>
+
                     <div class="data-toolbar">
                         <div class="toolbar-left">
                             <div class="filter-section">
@@ -969,6 +1103,7 @@
     <script src="js/batchManager.js"></script>
     <script src="js/exportManager.js"></script>
     <script src="js/alchemerApi.js"></script>
+    <script src="js/projectManager.js"></script>
     <script src="js/uiRenderer.js"></script>
     <script src="js/storageManager.js"></script>
     <script src="index.js"></script>
