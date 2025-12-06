@@ -2017,7 +2017,7 @@ async function renderProjectsList() {
     const countBadge = document.getElementById('projectCount');
     if (!listContainer || typeof ProjectManager === 'undefined') return;
 
-    // Get projects directly from cache (loaded from localStorage instantly)
+    // Get projects directly from cache
     const projects = ProjectManager.getAllProjects();
     countBadge.textContent = projects.length;
 
@@ -2026,9 +2026,14 @@ async function renderProjectsList() {
             <div class="empty-state">
                 <span class="empty-icon">📂</span>
                 <p>Chưa có project nào</p>
-                <button class="btn btn-outline" onclick="openProjectModal()">
-                    Tạo project đầu tiên
-                </button>
+                <div class="empty-state-actions" style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                    <button class="btn btn-outline" onclick="openProjectModal()">
+                        Tạo project đầu tiên
+                    </button>
+                    <button class="btn btn-sm btn-ghost" onclick="ProjectManager.syncFromServer()">
+                        🔄 Tải lại
+                    </button>
+                </div>
             </div>
         `;
         return;
@@ -2037,6 +2042,8 @@ async function renderProjectsList() {
     const activeId = ProjectManager.activeProjectId;
 
     listContainer.innerHTML = projects.map(p => {
+        if (!p) return ''; // Skip invalid items
+
         const isActive = p.id === activeId;
         const isSelected = p.id === selectedProjectId;
         const isStarred = isProjectStarred(p.name);
@@ -2048,7 +2055,7 @@ async function renderProjectsList() {
             <div class="project-item ${isSelected ? 'active' : ''}" onclick="selectProject('${p.id}')">
                 <div class="project-item-icon">📊</div>
                 <div class="project-item-info">
-                    <div class="project-item-name">${p.name}</div>
+                    <div class="project-item-name">${p.name || 'Unnamed'}</div>
                     <div class="project-item-meta">
                         <span>Survey: ${p.surveyId || '-'}</span>
                         ${quotaInfo ? `<span>${quotaInfo}</span>` : ''}
