@@ -12,6 +12,9 @@ const ConfigManager = {
         EMAIL_COL: 'H',            // Email address column
         EMAIL_BATCH_COL: 'S',      // Email batch column
         EMAIL_LINK_COL: 'E',       // Email link column (sguid)
+        REMIND_SMS_BATCH_COL: 'T', // Remind SMS Batch column
+        REMIND_EMAIL_BATCH_COL: 'U', // Remind Email Batch column
+        STATUS_COL: 'V',           // Respondent Status column
         DEFAULT_LIMIT: 500,
         EXPORT_AFTER_MARK: false,
         OVERWRITE_BATCH: false,

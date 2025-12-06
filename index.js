@@ -331,8 +331,12 @@ function markBatch(type, limit) {
     let result;
     if (type === 'sms') {
         result = BatchManager.markSmsBatch(limit, indices);
-    } else {
+    } else if (type === 'email') {
         result = BatchManager.markEmailBatch(limit, indices);
+    } else if (type === 'remind_sms') {
+        result = BatchManager.markRemindSmsBatch(limit, indices);
+    } else if (type === 'remind_email') {
+        result = BatchManager.markRemindEmailBatch(limit, indices);
     }
 
     if (result.success) {
@@ -346,9 +350,10 @@ function markBatch(type, limit) {
         if (config.EXPORT_AFTER_MARK) {
             if (type === 'sms') {
                 ExportManager.exportSmsBatch(result.newBatch);
-            } else {
+            } else if (type === 'email') {
                 ExportManager.exportEmailBatch(result.newBatch);
             }
+            // Remind exports? Assuming not needed for now or handled manually
         }
     } else {
         UIRenderer.showToast(result.message, 'error');
@@ -483,6 +488,9 @@ function saveConfig() {
         EMAIL_COL: document.getElementById('configEmailCol').value,
         EMAIL_BATCH_COL: document.getElementById('configEmailBatchCol').value,
         EMAIL_LINK_COL: document.getElementById('configEmailLinkCol').value,
+        REMIND_SMS_BATCH_COL: document.getElementById('configRemindSmsBatchCol').value,
+        REMIND_EMAIL_BATCH_COL: document.getElementById('configRemindEmailBatchCol').value,
+        STATUS_COL: document.getElementById('configStatusCol').value,
         TEMPLATE_TEXT: document.getElementById('templateText').value,
         OVERWRITE_BATCH: document.getElementById('configOverwriteBatch').checked,
         EXPORT_AFTER_MARK: document.getElementById('configExportAfterMark').checked,

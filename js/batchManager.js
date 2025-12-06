@@ -173,6 +173,90 @@ const BatchManager = {
         if (!batchCol) return [];
 
         return data.filter(row => row[batchCol] === batchNumber);
+    },
+    /**
+     * Mark Remind SMS batch
+     */
+    markRemindSmsBatch(limit, filteredIndices = null) {
+        const config = ConfigManager.getAll();
+        const data = DataManager.getData();
+        const headers = DataManager.getHeaders();
+        const batchColName = config.REMIND_SMS_BATCH_COL;
+
+        if (data.length === 0) return { success: false, message: 'No data.' };
+
+        // Ensure column exists
+        if (!DataManager.findColumn(batchColName)) {
+            DataManager.ensureColumn(headers[ConfigManager.colToIndex(batchColName)] || 'Remind_SMS_Batch');
+        }
+        const actualBatchCol = DataManager.findColumn(batchColName) || 'Remind_SMS_Batch';
+
+        // Get next batch number (shared with SMS or separate? Using separate logic for simplicity, or just incrementing)
+        // For now, let's use the same logic as SMS but tracked separately if needed.
+        // Actually, let's just use a simple robust approach: find max in column + 1
+        let maxBatch = 0;
+        data.forEach(row => {
+            const val = parseInt(row[actualBatchCol]);
+            if (!isNaN(val) && val > maxBatch) maxBatch = val;
+        });
+        const newBatch = maxBatch + 1;
+
+        const indicesToProcess = filteredIndices || data.map((_, i) => i);
+        DataManager.saveUndoState();
+
+        let picked = 0;
+        for (const idx of indicesToProcess) {
+            if (picked >= limit) break;
+            const row = data[idx];
+            if (!row[actualBatchCol] && row[actualBatchCol] !== 0) {
+                row[actualBatchCol] = newBatch;
+                picked++;
+            }
+        }
+
+        ConfigManager.addActionHistory({ type: 'mark_remind_sms', batch: newBatch, count: picked, icon: '📲' });
+        return { success: true, picked, newBatch, message: `Marked Remind SMS batch ${newBatch} for ${picked} rows.` };
+    },
+
+    /**
+     * Mark Remind Email batch
+     */
+    markRemindEmailBatch(limit, filteredIndices = null) {
+        const config = ConfigManager.getAll();
+        const data = DataManager.getData();
+        const headers = DataManager.getHeaders();
+        const batchColName = config.REMIND_EMAIL_BATCH_COL;
+
+        if (data.length === 0) return { success: false, message: 'No data.' };
+
+        // Ensure column exists
+        if (!DataManager.findColumn(batchColName)) {
+            DataManager.ensureColumn(headers[ConfigManager.colToIndex(batchColName)] || 'Remind_Email_Batch');
+        }
+        const actualBatchCol = DataManager.findColumn(batchColName) || 'Remind_Email_Batch';
+
+        let maxBatch = 0;
+        data.forEach(row => {
+            const val = parseInt(row[actualBatchCol]);
+            if (!isNaN(val) && val > maxBatch) maxBatch = val;
+        });
+        const newBatch = maxBatch + 1;
+
+        const indicesToProcess = filteredIndices || data.map((_, i) => i);
+        DataManager.saveUndoState();
+
+        let picked = 0;
+        for (const idx of indicesToProcess) {
+            if (picked >= limit) break;
+            const row = data[idx];
+            if (!row[actualBatchCol] && row[actualBatchCol] !== 0) {
+                row[actualBatchCol] = newBatch;
+                picked++;
+            }
+        }
+
+        ConfigManager.addActionHistory({ type: 'mark_remind_email', batch: newBatch, count: picked, icon: '📧' });
+        return { success: true, picked, newBatch, message: `Marked Remind Email batch ${newBatch} for ${picked} rows.` };
     }
 };
 
