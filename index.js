@@ -2017,18 +2017,7 @@ async function renderProjectsList() {
     const countBadge = document.getElementById('projectCount');
     if (!listContainer || typeof ProjectManager === 'undefined') return;
 
-    // If ProjectManager is still loading, wait for it
-    if (ProjectManager.isLoading) {
-        listContainer.innerHTML = `
-            <div class="loading-state">
-                <span class="loading-spinner">⏳</span>
-                <p>Đang tải projects...</p>
-            </div>
-        `;
-        // Wait for load to complete, then re-render
-        await ProjectManager.loadProjects();
-    }
-
+    // Get projects directly from cache (loaded from localStorage instantly)
     const projects = ProjectManager.getAllProjects();
     countBadge.textContent = projects.length;
 
