@@ -635,8 +635,9 @@ function openModal(title, content, onConfirm) {
 
     const confirmBtn = document.getElementById('modalConfirm');
     confirmBtn.onclick = () => {
+        // Do NOT auto-close here - let callback control when to close
+        // This allows form values to be read before modal closes
         if (onConfirm) onConfirm();
-        closeModal();
     };
 }
 
