@@ -302,4 +302,14 @@ const ProjectManager = {
 // Initialize when script loads
 if (typeof window !== 'undefined') {
     window.ProjectManager = ProjectManager;
+
+    // Auto-init when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            ProjectManager.init();
+        });
+    } else {
+        // DOM already loaded
+        ProjectManager.init();
+    }
 }
