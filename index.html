@@ -33,9 +33,13 @@
                     <span class="nav-icon">📥</span>
                     <span class="nav-text">Import Data</span>
                 </a>
+                <a href="#" class="nav-item" data-view="urlImport">
+                    <span class="nav-icon">🌐</span>
+                    <span class="nav-text">URL Import</span>
+                </a>
                 <a href="#" class="nav-item" data-view="data">
                     <span class="nav-icon">📋</span>
-                    <span class="nav-text">Data View</span>
+                    <span class="nav-text">Filter & Batch</span>
                 </a>
                 <a href="#" class="nav-item" data-view="export">
                     <span class="nav-icon">📤</span>
@@ -386,7 +390,86 @@
                     </div>
                 </section>
 
-                <!-- Data View -->
+                <!-- URL Import View -->
+                <section class="view" id="urlImportView">
+                    <div class="url-import-container">
+                        <!-- Import Form Card -->
+                        <div class="card url-import-card">
+                            <div class="card-header">
+                                <h3>🌐 Import từ URL</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="url-import-form">
+                                    <div class="form-group">
+                                        <label>URL file CSV/Excel:</label>
+                                        <div class="input-group">
+                                            <input type="url" id="urlModuleInput" class="form-control"
+                                                placeholder="https://example.com/data.csv">
+                                            <button class="btn btn-primary" onclick="importUrlModule()">
+                                                📥 Import
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="url-import-progress" id="urlModuleProgress" style="display: none;">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="urlModuleProgressFill" style="width: 0%">
+                                            </div>
+                                        </div>
+                                        <span class="progress-text" id="urlModuleProgressText">Đang tải...</span>
+                                    </div>
+                                </div>
+                                <div class="url-history-section">
+                                    <label>📜 Lịch sử import:</label>
+                                    <select id="urlHistorySelect" class="form-control"
+                                        onchange="loadUrlHistory(this.value)">
+                                        <option value="">-- Chọn để xem lại --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- URL Data Table -->
+                        <div class="card url-data-card" id="urlDataCard" style="display: none;">
+                            <div class="card-header">
+                                <h3>📊 Dữ liệu từ URL</h3>
+                                <span class="url-data-info" id="urlDataInfo"></span>
+                            </div>
+                            <div class="card-body">
+                                <div class="data-table-container">
+                                    <table class="data-table" id="urlDataTable">
+                                        <thead id="urlDataTableHead"></thead>
+                                        <tbody id="urlDataTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="url-pagination-controls">
+                                    <div class="pagination-info">
+                                        <span>Rows per page:</span>
+                                        <select id="urlRowsPerPage" class="form-control form-control-sm"
+                                            onchange="changeUrlRowsPerPage(this.value)">
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                            <option value="100" selected>100</option>
+                                            <option value="200">200</option>
+                                        </select>
+                                    </div>
+                                    <div class="pagination-buttons">
+                                        <button class="btn btn-sm btn-outline"
+                                            onclick="goToUrlPage('first')">⏮️</button>
+                                        <button class="btn btn-sm btn-outline" onclick="goToUrlPage('prev')">◀️</button>
+                                        <span class="page-numbers" id="urlPageNumbers"></span>
+                                        <button class="btn btn-sm btn-outline" onclick="goToUrlPage('next')">▶️</button>
+                                        <button class="btn btn-sm btn-outline" onclick="goToUrlPage('last')">⏭️</button>
+                                    </div>
+                                    <span class="pagination-info" id="urlPaginationInfo">Page 1 of 1</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data View (Filter & Batch) -->
                 <section class="view" id="dataView">
                     <div class="data-toolbar">
                         <div class="toolbar-left">

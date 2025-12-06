@@ -1351,3 +1351,223 @@ window.markNotificationRead = markNotificationRead;
 window.addNotification = addNotification;
 window.updateDeleteBatchDropdown = updateDeleteBatchDropdown;
 window.deleteBatchAction = deleteBatchAction;
+
+// ===== URL Import Module =====
+const urlImportState = {
+    data: [],
+    headers: [],
+    currentPage: 1,
+    rowsPerPage: 100,
+    totalPages: 1,
+    currentUrl: '',
+    history: []
+};
+
+const URL_HISTORY_KEY = 'fw_tools_url_history';
+
+// Initialize history on load
+document.addEventListener('DOMContentLoaded', () => {
+    loadUrlHistoryList();
+});
+
+async function importUrlModule() {
+    const url = document.getElementById('urlModuleInput').value.trim();
+
+    if (!url) {
+        UIRenderer.showToast('Vui lòng nhập URL.', 'warning');
+        return;
+    }
+
+    const progress = document.getElementById('urlModuleProgress');
+    const progressFill = document.getElementById('urlModuleProgressFill');
+    const progressText = document.getElementById('urlModuleProgressText');
+
+    progress.style.display = 'block';
+    progressFill.style.width = '30%';
+    progressText.textContent = 'Đang tải từ URL...';
+
+    try {
+        // Use CORS proxy
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to fetch URL');
+        }
+
+        progressFill.style.width = '60%';
+        progressText.textContent = 'Đang parse dữ liệu...';
+
+        let workbook;
+        if (result.encoding === 'base64') {
+            const binary = atob(result.data);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            workbook = XLSX.read(bytes, { type: 'array' });
+        } else {
+            workbook = XLSX.read(result.data, { type: 'string' });
+        }
+
+        progressFill.style.width = '80%';
+        progressText.textContent = 'Đang xử lý...';
+
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+        if (!jsonData || jsonData.length === 0) {
+            throw new Error('File is empty or invalid');
+        }
+
+        urlImportState.headers = jsonData[0].map(h => String(h).trim());
+        urlImportState.data = jsonData.slice(1);
+        urlImportState.currentPage = 1;
+        urlImportState.currentUrl = url;
+
+        // Save to history
+        saveUrlToHistory(url, result.filename || url, urlImportState.data.length);
+
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Hoàn thành!';
+
+        setTimeout(() => {
+            progress.style.display = 'none';
+            renderUrlDataTable();
+        }, 500);
+
+        UIRenderer.showToast(`Import thành công ${urlImportState.data.length} dòng.`, 'success');
+        addNotification(`Import ${urlImportState.data.length} rows từ URL`, '🌐');
+
+    } catch (error) {
+        console.error('URL import error:', error);
+        UIRenderer.showToast(`Lỗi: ${error.message}`, 'error');
+        progress.style.display = 'none';
+    }
+}
+
+function renderUrlDataTable() {
+    const tableHead = document.getElementById('urlDataTableHead');
+    const tableBody = document.getElementById('urlDataTableBody');
+    const dataCard = document.getElementById('urlDataCard');
+    const dataInfo = document.getElementById('urlDataInfo');
+
+    if (!urlImportState.data.length) return;
+
+    dataCard.style.display = 'block';
+
+    // Calculate pagination
+    const totalRows = urlImportState.data.length;
+    urlImportState.totalPages = Math.ceil(totalRows / urlImportState.rowsPerPage);
+
+    // Render headers
+    tableHead.innerHTML = `<tr><th>#</th>${urlImportState.headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`;
+
+    // Render rows
+    const start = (urlImportState.currentPage - 1) * urlImportState.rowsPerPage;
+    const end = Math.min(start + urlImportState.rowsPerPage, totalRows);
+    const pageData = urlImportState.data.slice(start, end);
+
+    tableBody.innerHTML = pageData.map((row, i) => {
+        const rowNum = start + i + 1;
+        return `<tr><td class="row-number">${rowNum}</td>${row.map(cell => `<td>${escapeHtml(String(cell || ''))}</td>`).join('')}</tr>`;
+    }).join('');
+
+    // Update info
+    dataInfo.textContent = `Hiển thị ${start + 1}-${end} / ${totalRows} dòng`;
+    document.getElementById('urlPaginationInfo').textContent = `Page ${urlImportState.currentPage} of ${urlImportState.totalPages}`;
+
+    // Update page numbers
+    renderUrlPageNumbers();
+}
+
+function renderUrlPageNumbers() {
+    const container = document.getElementById('urlPageNumbers');
+    const current = urlImportState.currentPage;
+    const total = urlImportState.totalPages;
+
+    let pages = [];
+    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+        pages.push(i);
+    }
+
+    container.innerHTML = pages.map(p =>
+        `<button class="btn btn-xs ${p === current ? 'btn-primary' : 'btn-outline'}" onclick="goToUrlPage(${p})">${p}</button>`
+    ).join('');
+}
+
+function goToUrlPage(page) {
+    if (page === 'first') urlImportState.currentPage = 1;
+    else if (page === 'prev') urlImportState.currentPage = Math.max(1, urlImportState.currentPage - 1);
+    else if (page === 'next') urlImportState.currentPage = Math.min(urlImportState.totalPages, urlImportState.currentPage + 1);
+    else if (page === 'last') urlImportState.currentPage = urlImportState.totalPages;
+    else urlImportState.currentPage = page;
+
+    renderUrlDataTable();
+}
+
+function changeUrlRowsPerPage(value) {
+    urlImportState.rowsPerPage = parseInt(value);
+    urlImportState.currentPage = 1;
+    renderUrlDataTable();
+}
+
+function saveUrlToHistory(url, filename, rowCount) {
+    let history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
+
+    // Remove if exists
+    history = history.filter(h => h.url !== url);
+
+    // Add to front
+    history.unshift({
+        url,
+        filename,
+        rowCount,
+        timestamp: new Date().toISOString()
+    });
+
+    // Keep only 10
+    history = history.slice(0, 10);
+
+    localStorage.setItem(URL_HISTORY_KEY, JSON.stringify(history));
+    loadUrlHistoryList();
+}
+
+function loadUrlHistoryList() {
+    const select = document.getElementById('urlHistorySelect');
+    if (!select) return;
+
+    const history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
+
+    select.innerHTML = '<option value="">-- Chọn để xem lại --</option>' +
+        history.map((h, i) => {
+            const date = new Date(h.timestamp).toLocaleDateString('vi-VN');
+            return `<option value="${i}">${h.filename} (${h.rowCount} rows) - ${date}</option>`;
+        }).join('');
+}
+
+async function loadUrlHistory(index) {
+    if (index === '') return;
+
+    const history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
+    const item = history[parseInt(index)];
+
+    if (item) {
+        document.getElementById('urlModuleInput').value = item.url;
+        await importUrlModule();
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Make URL module functions global
+window.importUrlModule = importUrlModule;
+window.goToUrlPage = goToUrlPage;
+window.changeUrlRowsPerPage = changeUrlRowsPerPage;
+window.loadUrlHistory = loadUrlHistory;

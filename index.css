@@ -2189,3 +2189,58 @@ textarea.form-control {
     border-radius: var(--border-radius);
     border: 1px dashed var(--color-danger);
 }
+
+/* ===== URL Import Module ===== */
+.url-import-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.url-import-card {
+    max-width: 800px;
+}
+
+.url-import-form .input-group {
+    display: flex;
+    gap: 12px;
+}
+
+.url-import-form .input-group input {
+    flex: 1;
+}
+
+.url-history-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.url-history-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.url-data-card {
+    flex: 1;
+}
+
+.url-data-card .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.url-data-info {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.url-pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
