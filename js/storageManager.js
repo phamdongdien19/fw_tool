@@ -68,6 +68,10 @@ const StorageManager = {
                 this.isDirty = false;
                 this.updateSaveIndicator('saved');
                 this.saveToLocalStorage(name); // Backup to localStorage
+
+                // Sync with ProjectManager - create entry if not exists
+                await this.syncProjectToManager(name, result.url);
+
                 UIRenderer.showToast(`Đã lưu project "${name}"`, 'success');
                 this.loadProjectList(); // Refresh project list
                 return { success: true, message: result.message };
@@ -86,6 +90,32 @@ const StorageManager = {
             return { success: false, message: error.message };
         } finally {
             this.isSaving = false;
+        }
+    },
+
+    /**
+     * Sync saved project with ProjectManager
+     */
+    async syncProjectToManager(projectName, dataUrl) {
+        if (typeof ProjectManager === 'undefined') return;
+
+        // Check if project exists in ProjectManager
+        const existingProjects = ProjectManager.getAllProjects();
+        const existing = existingProjects.find(p => p.name === projectName);
+
+        if (existing) {
+            // Update with data URL
+            await ProjectManager.updateProject(existing.id, { dataFileUrl: dataUrl });
+        } else {
+            // Create new ProjectManager entry for this data project
+            await ProjectManager.createProject({
+                name: projectName,
+                surveyId: '',
+                criteria: '',
+                target: 0,
+                notes: 'Auto-created from data save',
+                dataFileUrl: dataUrl
+            });
         }
     },
 
@@ -146,28 +176,69 @@ const StorageManager = {
     },
 
     /**
-     * Get list of saved projects
+     * Get list of saved projects - merged from server AND ProjectManager
      */
     async loadProjectList() {
+        const allProjects = new Map(); // Use Map to dedupe by name
+
+        // 1. Get projects from ProjectManager first (priority)
+        if (typeof ProjectManager !== 'undefined') {
+            const pmProjects = ProjectManager.getAllProjects();
+            pmProjects.forEach(p => {
+                allProjects.set(p.name, {
+                    name: p.name,
+                    id: p.id,
+                    hasMetadata: true,
+                    surveyId: p.surveyId,
+                    criteria: p.criteria
+                });
+            });
+        }
+
+        // 2. Get projects from server (data files) and merge
         try {
             const response = await fetch(`${this.apiBase}/api/projects/list`);
             const result = await response.json();
 
-            if (result.success) {
-                this.renderProjectDropdown(result.projects);
-                return result.projects;
+            if (result.success && result.projects) {
+                result.projects.forEach(p => {
+                    const name = p.name || p;
+                    if (!allProjects.has(name)) {
+                        allProjects.set(name, {
+                            name: name,
+                            url: p.url,
+                            hasData: true,
+                            hasMetadata: false
+                        });
+                    } else {
+                        // Merge: project from PM now also has data
+                        const existing = allProjects.get(name);
+                        existing.hasData = true;
+                        existing.url = p.url;
+                    }
+                });
             }
-            return [];
-
         } catch (error) {
-            console.error('List error:', error);
-            // Try loading from localStorage
-            const localProjects = this.getLocalProjects();
-            if (localProjects.length > 0) {
-                this.renderProjectDropdown(localProjects);
-            }
-            return [];
+            console.error('Server list error:', error);
         }
+
+        // 3. Also check localStorage
+        const localProjects = this.getLocalProjects();
+        localProjects.forEach(p => {
+            const name = p.name || p;
+            if (!allProjects.has(name)) {
+                allProjects.set(name, {
+                    name: name,
+                    hasData: true,
+                    hasMetadata: false,
+                    isLocal: true
+                });
+            }
+        });
+
+        const projects = Array.from(allProjects.values());
+        this.renderProjectDropdown(projects);
+        return projects;
     },
 
     /**
@@ -269,7 +340,11 @@ const StorageManager = {
             const name = project.name || project;
             const option = document.createElement('option');
             option.value = name;
-            option.textContent = name;
+
+            // Show indicator if project has metadata (from ProjectManager)
+            const metaIcon = project.hasMetadata ? '📋 ' : '';
+            option.textContent = metaIcon + name;
+
             if (name === this.currentProject) {
                 option.selected = true;
             }
