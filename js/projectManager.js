@@ -376,11 +376,19 @@ if (typeof window !== 'undefined') {
 
     // Auto-init when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            ProjectManager.init();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await ProjectManager.init();
+            // Trigger re-render if on projects view
+            if (typeof renderProjectsList === 'function') {
+                renderProjectsList();
+            }
         });
     } else {
         // DOM already loaded
-        ProjectManager.init();
+        ProjectManager.init().then(() => {
+            if (typeof renderProjectsList === 'function') {
+                renderProjectsList();
+            }
+        });
     }
 }

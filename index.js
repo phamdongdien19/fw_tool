@@ -2012,10 +2012,22 @@ window.deleteCurrentProject = deleteCurrentProject;
 // ===== Project Management Module =====
 var selectedProjectId = null;
 
-function renderProjectsList() {
+async function renderProjectsList() {
     const listContainer = document.getElementById('projectsList');
     const countBadge = document.getElementById('projectCount');
     if (!listContainer || typeof ProjectManager === 'undefined') return;
+
+    // If ProjectManager is still loading, wait for it
+    if (ProjectManager.isLoading) {
+        listContainer.innerHTML = `
+            <div class="loading-state">
+                <span class="loading-spinner">⏳</span>
+                <p>Đang tải projects...</p>
+            </div>
+        `;
+        // Wait for load to complete, then re-render
+        await ProjectManager.loadProjects();
+    }
 
     const projects = ProjectManager.getAllProjects();
     countBadge.textContent = projects.length;
