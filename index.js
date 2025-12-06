@@ -2256,7 +2256,7 @@ function openProjectModal(editId = null) {
     );
 }
 
-function saveProjectFromModal(editId = null) {
+async function saveProjectFromModal(editId = null) {
     const name = document.getElementById('projectNameInput').value.trim();
     const surveyId = document.getElementById('projectSurveyIdInput').value.trim();
     const target = document.getElementById('projectTargetInput').value;
@@ -2269,16 +2269,16 @@ function saveProjectFromModal(editId = null) {
     }
 
     if (editId) {
-        ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes });
+        await ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes });
         UIRenderer.showToast('Đã cập nhật project', 'success');
     } else {
-        const newProject = ProjectManager.createProject({ name, surveyId, target, criteria, notes });
+        const newProject = await ProjectManager.createProject({ name, surveyId, target, criteria, notes });
         selectedProjectId = newProject.id;
         UIRenderer.showToast('Đã tạo project mới', 'success');
     }
 
     closeModal();
-    renderProjectsList();
+    await renderProjectsList();
     if (selectedProjectId) {
         renderProjectDetail(selectedProjectId);
     }
