@@ -117,6 +117,9 @@ const DataManager = {
                     // Detect batches
                     this.detectBatches();
 
+                    // Auto-create required columns if they don't exist
+                    this.ensureRequiredColumns();
+
                     // Clear undo/redo
                     this.undoStack = [];
                     this.redoStack = [];
@@ -156,6 +159,51 @@ const DataManager = {
     },
 
     /**
+     * Ensure required columns exist after import
+     * These columns are needed for batch marking, content generation, etc.
+     */
+    ensureRequiredColumns() {
+        // Define required columns in order they should be added
+        const requiredColumns = [
+            'Content_SMS',          // SMS content (generated from template)
+            'SMS_Batch',            // SMS batch number
+            'Content_Email',        // Email content
+            'Email_Batch',          // Email batch number
+            'Remind_SMS_Batch',     // Remind SMS batch
+            'Remind_Email_Batch',   // Remind Email batch
+            'Response_Status'       // Respondent status from API
+        ];
+
+        // Check each required column and add if missing
+        let columnsAdded = [];
+        requiredColumns.forEach(colName => {
+            // Check if column exists (case-insensitive)
+            const exists = this.headers.some(h =>
+                h.toLowerCase() === colName.toLowerCase() ||
+                h.toLowerCase().replace(/[_\s]/g, '') === colName.toLowerCase().replace(/[_\s]/g, '')
+            );
+
+            if (!exists) {
+                // Add column to headers
+                this.headers.push(colName);
+
+                // Initialize empty value for each row
+                this.data.forEach(row => {
+                    row[colName] = '';
+                });
+
+                columnsAdded.push(colName);
+            }
+        });
+
+        if (columnsAdded.length > 0) {
+            console.log('Auto-created columns:', columnsAdded);
+        }
+
+        return columnsAdded;
+    },
+
+    /**
      * Detect existing batches in data
      */
     detectBatches() {
@@ -183,22 +231,38 @@ const DataManager = {
     },
 
     /**
-     * Find column by letter or name
+     * Find column by letter or name (case-insensitive)
      */
     findColumn(colRef) {
         if (!colRef) return null;
 
-        // Try as letter first (E -> index 4 -> headers[4])
-        if (/^[A-Z]+$/i.test(String(colRef))) {
-            const index = ConfigManager.colToIndex(colRef);
+        const colRefStr = String(colRef);
+
+        // Try as column letter first (E -> index 4 -> headers[4])
+        if (/^[A-Z]+$/i.test(colRefStr)) {
+            const index = ConfigManager.colToIndex(colRefStr);
             if (index >= 0 && index < this.headers.length) {
                 return this.headers[index];
             }
         }
 
-        // Try as header name
-        if (this.headers.includes(colRef)) {
-            return colRef;
+        // Try exact match first
+        if (this.headers.includes(colRefStr)) {
+            return colRefStr;
+        }
+
+        // Try case-insensitive match
+        const lowerRef = colRefStr.toLowerCase();
+        const normalizedRef = lowerRef.replace(/[_\s]/g, '');
+
+        for (const header of this.headers) {
+            if (header.toLowerCase() === lowerRef) {
+                return header;
+            }
+            // Also try without underscores/spaces
+            if (header.toLowerCase().replace(/[_\s]/g, '') === normalizedRef) {
+                return header;
+            }
         }
 
         return null;

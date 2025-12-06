@@ -6,15 +6,17 @@
 const ConfigManager = {
     // Default configuration (matching Apps Script FW_DEFAULTS)
     DEFAULTS: {
-        SOURCE_COL: 'E',           // sguid_link column
-        CONTENT_COL: 'P',          // SMS content column
-        BATCH_COL: 'Q',            // SMS batch column
-        EMAIL_COL: 'H',            // Email address column
-        EMAIL_BATCH_COL: 'S',      // Email batch column
-        EMAIL_LINK_COL: 'E',       // Email link column (sguid)
-        REMIND_SMS_BATCH_COL: 'T', // Remind SMS Batch column
-        REMIND_EMAIL_BATCH_COL: 'U', // Remind Email Batch column
-        STATUS_COL: 'V',           // Respondent Status column
+        // Column references (can be letter OR column name)
+        SOURCE_COL: 'E',             // sguid_link column
+        CONTENT_COL: 'Content_SMS',  // SMS content column (by name)
+        BATCH_COL: 'SMS_Batch',      // SMS batch column (by name)
+        EMAIL_COL: 'H',              // Email address column
+        EMAIL_CONTENT_COL: 'Content_Email',     // Email content column (by name)
+        EMAIL_BATCH_COL: 'Email_Batch',         // Email batch column (by name)
+        EMAIL_LINK_COL: 'E',                    // Email link column (sguid)
+        REMIND_SMS_BATCH_COL: 'Remind_SMS_Batch',    // Remind SMS Batch column (by name)
+        REMIND_EMAIL_BATCH_COL: 'Remind_Email_Batch', // Remind Email Batch column (by name)
+        STATUS_COL: 'Response_Status',          // Respondent Status column (by name)
         DEFAULT_LIMIT: 500,
         EXPORT_AFTER_MARK: false,
         OVERWRITE_BATCH: false,
