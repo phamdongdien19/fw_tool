@@ -17,6 +17,7 @@ let paginationState = {
 
 // ===== Column Visibility State =====
 let visibleColumns = new Set(); // All visible by default
+let columnVisibilityInitialized = false; // Track if user has modified
 
 // ===== Initialization =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -1086,10 +1087,11 @@ function toggleColumn(column, visible) {
 }
 
 function toggleAllColumns(showAll) {
+    columnVisibilityInitialized = true; // User has explicitly modified
     if (showAll) {
         visibleColumns = new Set(DataManager.getHeaders());
     } else {
-        visibleColumns.clear();
+        visibleColumns = new Set(); // Empty set = show nothing
     }
     renderColumnVisibilityList();
     UIRenderer.renderDataTable();

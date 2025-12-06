@@ -29,10 +29,18 @@ const UIRenderer = {
         const allData = data || DataManager.getData();
         const allHeaders = headers || DataManager.getHeaders();
 
-        // Get visible columns (use global visibleColumns or default to all)
-        const displayHeaders = typeof visibleColumns !== 'undefined' && visibleColumns.size > 0
-            ? allHeaders.filter(h => visibleColumns.has(h))
-            : allHeaders;
+        // Get visible columns - respect user selection even if empty
+        let displayHeaders;
+        if (typeof columnVisibilityInitialized !== 'undefined' && columnVisibilityInitialized) {
+            // User has explicitly set columns, respect their choice
+            displayHeaders = allHeaders.filter(h => visibleColumns.has(h));
+        } else if (typeof visibleColumns !== 'undefined' && visibleColumns.size > 0) {
+            // Initial state with some columns selected
+            displayHeaders = allHeaders.filter(h => visibleColumns.has(h));
+        } else {
+            // Default: show all columns
+            displayHeaders = allHeaders;
+        }
 
         // Apply filters
         let displayData, displayIndices;
