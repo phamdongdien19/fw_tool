@@ -3145,3 +3145,46 @@ textarea.form-control {
     background: rgba(16, 185, 129, 0.15);
     color: var(--color-success);
 }
+
+/* Collapsible Quota Details */
+.quota-details-mini.collapsed {
+    display: none;
+}
+
+.quota-expand-btn {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    transition: all 0.2s ease;
+}
+
+.quota-headline:hover .quota-expand-btn {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Star/Favorite Projects */
+.project-star {
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.project-star:hover {
+    color: var(--color-warning);
+    transform: scale(1.2);
+}
+
+.project-star.starred {
+    color: var(--color-warning);
+}
+
+.project-card .star-container {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}

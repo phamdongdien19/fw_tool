@@ -1877,6 +1877,10 @@ function toggleStarProject(projectName) {
     saveStarredProjects(starred);
     renderStarredProjects();
     updateProjectStarButton();
+    // Also refresh Projects tab list
+    if (typeof renderProjectsList === 'function') {
+        renderProjectsList();
+    }
 }
 
 function renderStarredProjects() {
@@ -2034,6 +2038,7 @@ function renderProjectsList() {
     listContainer.innerHTML = projects.map(p => {
         const isActive = p.id === activeId;
         const isSelected = p.id === selectedProjectId;
+        const isStarred = isProjectStarred(p.name);
         const quotaInfo = p.quotas && p.quotas.length > 0
             ? `${p.quotas.reduce((s, q) => s + q.count, 0)}/${p.quotas.reduce((s, q) => s + q.limit, 0)}`
             : '';
@@ -2048,7 +2053,12 @@ function renderProjectsList() {
                         ${quotaInfo ? `<span>${quotaInfo}</span>` : ''}
                     </div>
                 </div>
-                ${isActive ? '<span class="project-item-badge active">Active</span>' : ''}
+                <div class="project-item-actions">
+                    <span class="project-star ${isStarred ? 'starred' : ''}" 
+                          onclick="event.stopPropagation(); toggleStarProject('${p.name}')"
+                          title="${isStarred ? 'Bỏ sao' : 'Gắn sao'}">${isStarred ? '⭐' : '☆'}</span>
+                    ${isActive ? '<span class="project-item-badge active">Active</span>' : ''}
+                </div>
             </div>
         `;
     }).join('');
@@ -2286,12 +2296,19 @@ function deleteCurrentProjectMgmt() {
 function setAsActiveProject() {
     if (!selectedProjectId) return;
 
+    const project = ProjectManager.getProject(selectedProjectId);
+    if (!project) return;
+
     ProjectManager.setActiveProject(selectedProjectId);
     renderProjectsList();
     UIRenderer.showToast('Đã set project active', 'success');
 
     // Update project info panel in data view
     renderProjectInfoPanel();
+
+    // Also sync with StorageManager for Filter & Batch dropdown
+    StorageManager.currentProject = project.name;
+    StorageManager.loadProjectList();
 }
 
 // Project Info Panel for Data View
@@ -2307,6 +2324,7 @@ function renderProjectInfoPanel() {
 
     const summary = ProjectManager.getQuotaSummary(activeProject.id);
     const quotas = activeProject.quotas || [];
+    const showCollapsed = quotas.length > 3; // Collapse if more than 3 quotas
 
     // Build quota details HTML
     let quotaDetailsHtml = '';
@@ -2337,15 +2355,16 @@ function renderProjectInfoPanel() {
                 ${activeProject.notes ? `<div class="info-line"><strong>💡</strong> ${activeProject.notes}</div>` : ''}
                 ${summary ? `
                     <div class="quota-summary-mini">
-                        <div class="quota-headline">
+                        <div class="quota-headline" onclick="toggleQuotaDetails('infoPanel')" style="cursor: pointer;">
                             <strong>📊 Quota:</strong>
                             <span class="quota-total">${summary.totalCompleted}/${summary.totalLimit}</span>
                             <span class="quota-remaining">(còn ${summary.totalRemaining})</span>
+                            ${quotas.length > 0 ? `<span class="quota-expand-btn" id="quotaExpandBtnInfo">${showCollapsed ? '▶' : '▼'}</span>` : ''}
                         </div>
                         <div class="quota-progress-mini">
                             <div class="quota-bar-full" style="width: ${Math.min(100, Math.round((summary.totalCompleted / summary.totalLimit) * 100))}%"></div>
                         </div>
-                        <div class="quota-details-mini">
+                        <div class="quota-details-mini ${showCollapsed ? 'collapsed' : ''}" id="quotaDetailsInfo">
                             ${quotaDetailsHtml}
                         </div>
                     </div>
@@ -2354,6 +2373,26 @@ function renderProjectInfoPanel() {
         </div>
     `;
 }
+
+function toggleQuotaDetails(location) {
+    const detailsId = location === 'infoPanel' ? 'quotaDetailsInfo' : 'quotaDetailsProjects';
+    const btnId = location === 'infoPanel' ? 'quotaExpandBtnInfo' : 'quotaExpandBtnProjects';
+
+    const details = document.getElementById(detailsId);
+    const btn = document.getElementById(btnId);
+
+    if (details && btn) {
+        if (details.classList.contains('collapsed')) {
+            details.classList.remove('collapsed');
+            btn.textContent = '▼';
+        } else {
+            details.classList.add('collapsed');
+            btn.textContent = '▶';
+        }
+    }
+}
+
+window.toggleQuotaDetails = toggleQuotaDetails;
 
 function toggleProjectInfoPanel() {
     const body = document.getElementById('projectInfoBody');
@@ -2505,26 +2544,35 @@ async function handleProjectFileImport(event) {
         const result = await DataManager.importFile(file);
 
         if (result.success) {
-            // Save data to server with project name
-            const saveResult = await StorageManager.saveProject(project.name);
-
-            // Update project data info display
+            // Update project data info display first (local)
             updateProjectDataInfo(project.id, {
                 fileName: file.name,
-                rowCount: result.rowCount || DataManager.getData().length,
+                rowCount: result.rows || DataManager.getData().length,
                 importedAt: new Date().toISOString()
             });
 
             // Also set this as active project
             ProjectManager.setActiveProject(selectedProjectId);
-
-            UIRenderer.showToast(`Đã import ${file.name} cho project "${project.name}"`, 'success');
+            StorageManager.currentProject = project.name;
 
             // Render the data table
             UIRenderer.renderDataTable();
 
             // Refresh project detail to show data info
             renderProjectDetail(selectedProjectId);
+
+            UIRenderer.showToast(`Đã import ${file.name} cho project "${project.name}"`, 'success');
+
+            // Try to save to server (non-blocking)
+            StorageManager.saveProject(project.name).then(saveResult => {
+                if (saveResult.success) {
+                    console.log('Data saved to server');
+                } else {
+                    console.warn('Server save failed, using local backup');
+                }
+            }).catch(err => {
+                console.warn('Server save error:', err);
+            });
         } else {
             throw new Error(result.error || 'Import failed');
         }
