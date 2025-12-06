@@ -233,6 +233,34 @@ const DataManager = {
     },
 
     /**
+     * Set data from external source (e.g., server)
+     * @param {Array} headers - Column headers
+     * @param {Array} data - Row data
+     * @param {string} projectName - Project name for file info
+     */
+    setData(headers, data, projectName = 'Loaded Project') {
+        this.headers = headers || [];
+        this.data = data || [];
+        this.originalData = JSON.parse(JSON.stringify(this.data));
+
+        this.fileInfo = {
+            name: projectName,
+            type: 'project',
+            size: JSON.stringify(data).length,
+            loadedAt: new Date().toISOString()
+        };
+
+        // Detect batches
+        this.detectBatches();
+
+        // Clear undo/redo
+        this.undoStack = [];
+        this.redoStack = [];
+
+        console.log(`DataManager: Loaded ${this.data.length} rows, ${this.headers.length} columns`);
+    },
+
+    /**
      * Get headers
      */
     getHeaders() {
