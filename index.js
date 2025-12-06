@@ -1356,11 +1356,15 @@ window.deleteBatchAction = deleteBatchAction;
 const urlImportState = {
     data: [],
     headers: [],
+    visibleColumns: new Set(),
+    filteredData: [],
+    filterColumn: '',
+    filterValue: '',
     currentPage: 1,
     rowsPerPage: 100,
     totalPages: 1,
-    currentUrl: '',
-    history: []
+    projectName: '',
+    currentUrl: ''
 };
 
 const URL_HISTORY_KEY = 'fw_tools_url_history';
@@ -1372,6 +1376,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function importUrlModule() {
     const url = document.getElementById('urlModuleInput').value.trim();
+    const projectName = document.getElementById('urlProjectName')?.value.trim() || '';
 
     if (!url) {
         UIRenderer.showToast('Vui lòng nhập URL.', 'warning');
@@ -1387,7 +1392,6 @@ async function importUrlModule() {
     progressText.textContent = 'Đang tải từ URL...';
 
     try {
-        // Use CORS proxy
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
         const response = await fetch(proxyUrl);
         const result = await response.json();
@@ -1424,22 +1428,29 @@ async function importUrlModule() {
 
         urlImportState.headers = jsonData[0].map(h => String(h).trim());
         urlImportState.data = jsonData.slice(1);
+        urlImportState.filteredData = urlImportState.data;
+        urlImportState.visibleColumns = new Set(urlImportState.headers);
+        urlImportState.filterColumn = '';
+        urlImportState.filterValue = '';
         urlImportState.currentPage = 1;
         urlImportState.currentUrl = url;
+        urlImportState.projectName = projectName;
 
         // Save to history
-        saveUrlToHistory(url, result.filename || url, urlImportState.data.length);
+        saveUrlToHistory(url, projectName || result.filename || url, urlImportState.data.length);
 
         progressFill.style.width = '100%';
         progressText.textContent = 'Hoàn thành!';
 
         setTimeout(() => {
             progress.style.display = 'none';
+            initUrlFilters();
+            initUrlColumnVisibility();
             renderUrlDataTable();
         }, 500);
 
         UIRenderer.showToast(`Import thành công ${urlImportState.data.length} dòng.`, 'success');
-        addNotification(`Import ${urlImportState.data.length} rows từ URL`, '🌐');
+        addNotification(`Import ${urlImportState.data.length} rows: ${projectName || 'URL'}`, '🌐');
 
     } catch (error) {
         console.error('URL import error:', error);
@@ -1448,39 +1459,136 @@ async function importUrlModule() {
     }
 }
 
+function initUrlFilters() {
+    const colSelect = document.getElementById('urlFilterColumn');
+    colSelect.innerHTML = '<option value="">-- Lọc theo cột --</option>' +
+        urlImportState.headers.map(h => `<option value="${h}">${truncateText(h, 20)}</option>`).join('');
+    document.getElementById('urlFilterValue').innerHTML = '<option value="">-- Tất cả --</option>';
+}
+
+function updateUrlFilterValues() {
+    const col = document.getElementById('urlFilterColumn').value;
+    const valSelect = document.getElementById('urlFilterValue');
+
+    if (!col) {
+        valSelect.innerHTML = '<option value="">-- Tất cả --</option>';
+        return;
+    }
+
+    const colIndex = urlImportState.headers.indexOf(col);
+    const uniqueVals = [...new Set(urlImportState.data.map(row => String(row[colIndex] || '')))].sort();
+
+    valSelect.innerHTML = '<option value="">-- Tất cả --</option>' +
+        uniqueVals.slice(0, 50).map(v => `<option value="${v}">${truncateText(v, 25)}</option>`).join('');
+
+    urlImportState.filterColumn = col;
+}
+
+function applyUrlFilter() {
+    const val = document.getElementById('urlFilterValue').value;
+    urlImportState.filterValue = val;
+
+    if (!urlImportState.filterColumn || val === '') {
+        urlImportState.filteredData = urlImportState.data;
+    } else {
+        const colIndex = urlImportState.headers.indexOf(urlImportState.filterColumn);
+        urlImportState.filteredData = urlImportState.data.filter(row => String(row[colIndex] || '') === val);
+    }
+
+    urlImportState.currentPage = 1;
+    renderUrlDataTable();
+}
+
+function clearUrlFilter() {
+    document.getElementById('urlFilterColumn').value = '';
+    document.getElementById('urlFilterValue').innerHTML = '<option value="">-- Tất cả --</option>';
+    urlImportState.filterColumn = '';
+    urlImportState.filterValue = '';
+    urlImportState.filteredData = urlImportState.data;
+    urlImportState.currentPage = 1;
+    renderUrlDataTable();
+}
+
+function initUrlColumnVisibility() {
+    const list = document.getElementById('urlColumnList');
+    list.innerHTML = urlImportState.headers.map(col => `
+        <label title="${col}">
+            <input type="checkbox" ${urlImportState.visibleColumns.has(col) ? 'checked' : ''} 
+                onchange="toggleUrlColumn('${col}', this.checked)">
+            <span>${truncateText(col, 18)}</span>
+        </label>
+    `).join('');
+}
+
+function toggleUrlColumnPanel() {
+    const panel = document.getElementById('urlColVisPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleUrlColumn(col, visible) {
+    if (visible) urlImportState.visibleColumns.add(col);
+    else urlImportState.visibleColumns.delete(col);
+    renderUrlDataTable();
+}
+
+function toggleUrlAllColumns(showAll) {
+    if (showAll) urlImportState.visibleColumns = new Set(urlImportState.headers);
+    else urlImportState.visibleColumns = new Set();
+    initUrlColumnVisibility();
+    renderUrlDataTable();
+}
+
 function renderUrlDataTable() {
     const tableHead = document.getElementById('urlDataTableHead');
     const tableBody = document.getElementById('urlDataTableBody');
     const dataCard = document.getElementById('urlDataCard');
     const dataInfo = document.getElementById('urlDataInfo');
+    const dataTitle = document.getElementById('urlDataTitle');
 
     if (!urlImportState.data.length) return;
 
     dataCard.style.display = 'block';
+    if (urlImportState.projectName) {
+        dataTitle.textContent = `📊 ${urlImportState.projectName}`;
+    }
+
+    // Get visible headers
+    const visHeaders = urlImportState.headers.filter(h => urlImportState.visibleColumns.has(h));
+    const visIndices = visHeaders.map(h => urlImportState.headers.indexOf(h));
 
     // Calculate pagination
-    const totalRows = urlImportState.data.length;
-    urlImportState.totalPages = Math.ceil(totalRows / urlImportState.rowsPerPage);
+    const totalRows = urlImportState.filteredData.length;
+    urlImportState.totalPages = Math.ceil(totalRows / urlImportState.rowsPerPage) || 1;
 
-    // Render headers
-    tableHead.innerHTML = `<tr><th>#</th>${urlImportState.headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`;
+    // Render headers with tooltip
+    tableHead.innerHTML = `<tr><th>#</th>${visHeaders.map(h =>
+        `<th title="${h}">${truncateText(h, 15)}</th>`
+    ).join('')}</tr>`;
 
     // Render rows
     const start = (urlImportState.currentPage - 1) * urlImportState.rowsPerPage;
     const end = Math.min(start + urlImportState.rowsPerPage, totalRows);
-    const pageData = urlImportState.data.slice(start, end);
+    const pageData = urlImportState.filteredData.slice(start, end);
 
     tableBody.innerHTML = pageData.map((row, i) => {
         const rowNum = start + i + 1;
-        return `<tr><td class="row-number">${rowNum}</td>${row.map(cell => `<td>${escapeHtml(String(cell || ''))}</td>`).join('')}</tr>`;
+        return `<tr><td class="row-number">${rowNum}</td>${visIndices.map(idx => {
+            const val = String(row[idx] || '');
+            return `<td title="${escapeHtml(val)}">${escapeHtml(truncateText(val, 20))}</td>`;
+        }).join('')}</tr>`;
     }).join('');
 
     // Update info
-    dataInfo.textContent = `Hiển thị ${start + 1}-${end} / ${totalRows} dòng`;
-    document.getElementById('urlPaginationInfo').textContent = `Page ${urlImportState.currentPage} of ${urlImportState.totalPages}`;
+    const filtered = urlImportState.filterValue ? ` (đã lọc từ ${urlImportState.data.length})` : '';
+    dataInfo.textContent = `${start + 1}-${end} / ${totalRows} dòng${filtered}`;
+    document.getElementById('urlPaginationInfo').textContent = `Page ${urlImportState.currentPage} / ${urlImportState.totalPages}`;
 
-    // Update page numbers
     renderUrlPageNumbers();
+}
+
+function truncateText(text, maxLen) {
+    if (!text) return '';
+    return text.length > maxLen ? text.substring(0, maxLen) + '…' : text;
 }
 
 function renderUrlPageNumbers() {
@@ -1514,23 +1622,16 @@ function changeUrlRowsPerPage(value) {
     renderUrlDataTable();
 }
 
-function saveUrlToHistory(url, filename, rowCount) {
+function saveUrlToHistory(url, projectName, rowCount) {
     let history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
-
-    // Remove if exists
     history = history.filter(h => h.url !== url);
-
-    // Add to front
     history.unshift({
         url,
-        filename,
+        projectName,
         rowCount,
         timestamp: new Date().toISOString()
     });
-
-    // Keep only 10
     history = history.slice(0, 10);
-
     localStorage.setItem(URL_HISTORY_KEY, JSON.stringify(history));
     loadUrlHistoryList();
 }
@@ -1544,7 +1645,8 @@ function loadUrlHistoryList() {
     select.innerHTML = '<option value="">-- Chọn để xem lại --</option>' +
         history.map((h, i) => {
             const date = new Date(h.timestamp).toLocaleDateString('vi-VN');
-            return `<option value="${i}">${h.filename} (${h.rowCount} rows) - ${date}</option>`;
+            const name = h.projectName || 'Unknown';
+            return `<option value="${i}">${name} (${h.rowCount} rows) - ${date}</option>`;
         }).join('');
 }
 
@@ -1556,6 +1658,9 @@ async function loadUrlHistory(index) {
 
     if (item) {
         document.getElementById('urlModuleInput').value = item.url;
+        if (document.getElementById('urlProjectName')) {
+            document.getElementById('urlProjectName').value = item.projectName || '';
+        }
         await importUrlModule();
     }
 }
@@ -1566,8 +1671,22 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// Close panels when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.url-visibility-dropdown')) {
+        const panel = document.getElementById('urlColVisPanel');
+        if (panel) panel.style.display = 'none';
+    }
+});
+
 // Make URL module functions global
 window.importUrlModule = importUrlModule;
 window.goToUrlPage = goToUrlPage;
 window.changeUrlRowsPerPage = changeUrlRowsPerPage;
 window.loadUrlHistory = loadUrlHistory;
+window.updateUrlFilterValues = updateUrlFilterValues;
+window.applyUrlFilter = applyUrlFilter;
+window.clearUrlFilter = clearUrlFilter;
+window.toggleUrlColumnPanel = toggleUrlColumnPanel;
+window.toggleUrlColumn = toggleUrlColumn;
+window.toggleUrlAllColumns = toggleUrlAllColumns;
