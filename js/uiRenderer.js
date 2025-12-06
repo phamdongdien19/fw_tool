@@ -110,8 +110,11 @@ const UIRenderer = {
         // Update filter status
         document.getElementById('filterStatus').textContent = FilterEngine.getSummary();
 
-        // Initialize column visibility list if needed
-        if (typeof initColumnVisibility === 'function' && visibleColumns.size === 0 && allHeaders.length > 0) {
+        // Initialize column visibility list if needed (only if user hasn't set it)
+        if (typeof initColumnVisibility === 'function' &&
+            visibleColumns.size === 0 &&
+            allHeaders.length > 0 &&
+            (typeof columnVisibilityInitialized === 'undefined' || !columnVisibilityInitialized)) {
             initColumnVisibility();
         }
     },

@@ -404,6 +404,11 @@ function markBatch(type, limit) {
         UIRenderer.renderDashboard();
         updateUndoRedoButtons();
 
+        // Update delete batch dropdown
+        if (typeof updateDeleteBatchDropdown === 'function') {
+            updateDeleteBatchDropdown();
+        }
+
         // Trigger auto-save
         if (typeof StorageManager !== 'undefined') {
             StorageManager.markDirty();
