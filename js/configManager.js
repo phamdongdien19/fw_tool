@@ -19,6 +19,11 @@ const ConfigManager = {
         EXPORT_AFTER_MARK: false,
         OVERWRITE_BATCH: false,
         TEMPLATE_TEXT: 'IFM co KS 11phut ve nha dep song chat, nhan evoucher gotit 20.000d (250373).Hay tham gia ngay hom nay. Link: ',
+        // Default visible columns (empty = show all, or list column names)
+        DEFAULT_VISIBLE_COLUMNS: [],
+        // Alchemer API config
+        ALCHEMER_API_KEY: '',
+        ALCHEMER_SECRET_KEY: '',
     },
 
     // Current config
@@ -33,7 +38,8 @@ const ConfigManager = {
         TEMPLATES: 'fw_tools_templates',
         THEME: 'fw_tools_theme',
         EXPORT_HISTORY: 'fw_tools_export_history',
-        ACTION_HISTORY: 'fw_tools_action_history'
+        ACTION_HISTORY: 'fw_tools_action_history',
+        VISIBLE_COLUMNS: 'fw_tools_visible_columns'
     },
 
     /**
