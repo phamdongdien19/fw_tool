@@ -2492,3 +2492,67 @@ textarea.form-control {
     height: 18px;
     vertical-align: middle;
 }
+
+/* URL Filter Dropdown */
+.url-filter-dropdown {
+    position: relative;
+}
+
+.url-filter-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 250px;
+    max-height: 350px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 1100;
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.url-filter-panel .panel-header,
+.url-filter-panel .panel-footer {
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.url-filter-panel .panel-footer {
+    border-bottom: none;
+    border-top: 1px solid var(--border-color);
+    justify-content: flex-end;
+}
+
+.url-filter-panel .panel-header span {
+    flex: 1;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.filter-values-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 250px;
+    padding: 8px;
+}
+
+.filter-values-list label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.filter-values-list label:hover {
+    background: var(--bg-tertiary);
+}

@@ -80,6 +80,8 @@
                             Save</button>
                         <button class="btn btn-sm btn-secondary" onclick="createNewProject()" title="New Project">+
                             New</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCurrentProject()" title="Delete Project"
+                            id="deleteProjectBtn" style="display: none;">🗑️</button>
                         <span class="save-indicator" id="saveIndicator">✓ Saved</span>
                     </div>
                     <div class="notification-bell" id="notificationBell">
@@ -464,10 +466,26 @@
                                             onchange="updateUrlFilterValues()">
                                             <option value="">-- Lọc theo cột --</option>
                                         </select>
-                                        <select id="urlFilterValue" class="form-control form-control-sm"
-                                            onchange="applyUrlFilter()">
-                                            <option value="">-- Tất cả --</option>
-                                        </select>
+                                        <div class="url-filter-dropdown">
+                                            <button class="btn btn-sm btn-outline" id="urlFilterValBtn"
+                                                onclick="toggleUrlFilterPanel()">
+                                                Chọn giá trị ▼
+                                            </button>
+                                            <div class="url-filter-panel" id="urlFilterPanel" style="display: none;">
+                                                <div class="panel-header">
+                                                    <span>Lọc theo giá trị</span>
+                                                    <button class="btn btn-xs btn-outline"
+                                                        onclick="toggleUrlFilterAll(true)">All</button>
+                                                    <button class="btn btn-xs btn-outline"
+                                                        onclick="toggleUrlFilterAll(false)">None</button>
+                                                </div>
+                                                <div class="filter-values-list" id="urlFilterValuesList"></div>
+                                                <div class="panel-footer">
+                                                    <button class="btn btn-sm btn-primary"
+                                                        onclick="applyUrlMultiFilter()">Áp dụng</button>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <button class="btn btn-xs btn-outline" onclick="clearUrlFilter()">✕</button>
                                     </div>
                                     <!-- Column Visibility -->

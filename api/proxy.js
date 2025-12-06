@@ -50,6 +50,15 @@ export default async function handler(req, res) {
         // Get content type
         const contentType = response.headers.get('content-type') || 'application/octet-stream';
 
+        // Reject HTML responses (common error page pattern)
+        if (contentType.includes('text/html')) {
+            return res.status(400).json({
+                success: false,
+                error: 'URL returned HTML instead of data file. Please check the URL is a direct download link.',
+                contentType
+            });
+        }
+
         // For binary files (Excel), return as base64
         if (contentType.includes('spreadsheet') ||
             contentType.includes('excel') ||
@@ -70,6 +79,15 @@ export default async function handler(req, res) {
 
         // For text files (CSV), return as text
         const text = await response.text();
+
+        // Additional check: if text looks like HTML, reject it
+        if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<HTML')) {
+            return res.status(400).json({
+                success: false,
+                error: 'Response appears to be HTML, not a data file. Please verify the URL.',
+                contentType
+            });
+        }
 
         return res.status(200).json({
             success: true,

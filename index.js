@@ -1364,7 +1364,7 @@ const urlImportState = {
     visibleColumns: new Set(),
     filteredData: [],
     filterColumn: '',
-    filterValue: '',
+    selectedFilterValues: new Set(),
     currentPage: 1,
     rowsPerPage: 100,
     totalPages: 1,
@@ -1478,39 +1478,77 @@ function updateUrlFilterValues() {
     const valSelect = document.getElementById('urlFilterValue');
 
     if (!col) {
-        valSelect.innerHTML = '<option value="">-- Tất cả --</option>';
+        document.getElementById('urlFilterValuesList').innerHTML = '';
+        document.getElementById('urlFilterValBtn').textContent = 'Chọn giá trị ▼';
         return;
     }
 
     const colIndex = urlImportState.headers.indexOf(col);
     const uniqueVals = [...new Set(urlImportState.data.map(row => String(row[colIndex] || '')))].sort();
 
-    valSelect.innerHTML = '<option value="">-- Tất cả --</option>' +
-        uniqueVals.slice(0, 50).map(v => `<option value="${v}">${truncateText(v, 25)}</option>`).join('');
-
+    // Reset selected filter values
+    urlImportState.selectedFilterValues = new Set();
     urlImportState.filterColumn = col;
+
+    // Render checkbox list
+    document.getElementById('urlFilterValuesList').innerHTML = uniqueVals.slice(0, 100).map(v => `
+        <label title="${v}">
+            <input type="checkbox" data-value="${v.replace(/"/g, '&quot;')}" onchange="toggleUrlFilterValue(this)">
+            <span>${truncateText(v, 25) || '(empty)'}</span>
+        </label>
+    `).join('');
+
+    document.getElementById('urlFilterValBtn').textContent = 'Chọn giá trị ▼';
 }
 
-function applyUrlFilter() {
-    const val = document.getElementById('urlFilterValue').value;
-    urlImportState.filterValue = val;
+function toggleUrlFilterPanel() {
+    const panel = document.getElementById('urlFilterPanel');
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+}
 
-    if (!urlImportState.filterColumn || val === '') {
+function toggleUrlFilterValue(checkbox) {
+    const val = checkbox.dataset.value;
+    if (checkbox.checked) {
+        urlImportState.selectedFilterValues.add(val);
+    } else {
+        urlImportState.selectedFilterValues.delete(val);
+    }
+}
+
+function toggleUrlFilterAll(selectAll) {
+    const checkboxes = document.querySelectorAll('#urlFilterValuesList input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll;
+        if (selectAll) urlImportState.selectedFilterValues.add(cb.dataset.value);
+    });
+    if (!selectAll) urlImportState.selectedFilterValues = new Set();
+}
+
+function applyUrlMultiFilter() {
+    const selected = urlImportState.selectedFilterValues;
+
+    if (!urlImportState.filterColumn || selected.size === 0) {
         urlImportState.filteredData = urlImportState.data;
+        document.getElementById('urlFilterValBtn').textContent = 'Tất cả';
     } else {
         const colIndex = urlImportState.headers.indexOf(urlImportState.filterColumn);
-        urlImportState.filteredData = urlImportState.data.filter(row => String(row[colIndex] || '') === val);
+        urlImportState.filteredData = urlImportState.data.filter(row =>
+            selected.has(String(row[colIndex] || ''))
+        );
+        document.getElementById('urlFilterValBtn').textContent = `${selected.size} đã chọn`;
     }
 
     urlImportState.currentPage = 1;
+    document.getElementById('urlFilterPanel').style.display = 'none';
     renderUrlDataTable();
 }
 
 function clearUrlFilter() {
     document.getElementById('urlFilterColumn').value = '';
-    document.getElementById('urlFilterValue').innerHTML = '<option value="">-- Tất cả --</option>';
+    document.getElementById('urlFilterValuesList').innerHTML = '';
+    document.getElementById('urlFilterValBtn').textContent = 'Chọn giá trị ▼';
     urlImportState.filterColumn = '';
-    urlImportState.filterValue = '';
+    urlImportState.selectedFilterValues = new Set();
     urlImportState.filteredData = urlImportState.data;
     urlImportState.currentPage = 1;
     renderUrlDataTable();
@@ -1692,7 +1730,10 @@ window.goToUrlPage = goToUrlPage;
 window.changeUrlRowsPerPage = changeUrlRowsPerPage;
 window.loadUrlHistory = loadUrlHistory;
 window.updateUrlFilterValues = updateUrlFilterValues;
-window.applyUrlFilter = applyUrlFilter;
+window.toggleUrlFilterPanel = toggleUrlFilterPanel;
+window.toggleUrlFilterValue = toggleUrlFilterValue;
+window.toggleUrlFilterAll = toggleUrlFilterAll;
+window.applyUrlMultiFilter = applyUrlMultiFilter;
 window.clearUrlFilter = clearUrlFilter;
 window.toggleUrlColumnPanel = toggleUrlColumnPanel;
 window.toggleUrlColumn = toggleUrlColumn;
@@ -1770,8 +1811,67 @@ function updateProjectStarButton() {
         starBtn.innerHTML = isStarred ? '⭐' : '☆';
         starBtn.classList.toggle('starred', isStarred);
         starBtn.style.display = 'inline-block';
+        // Show delete button too
+        const deleteBtn = document.getElementById('deleteProjectBtn');
+        if (deleteBtn) deleteBtn.style.display = 'inline-block';
     } else if (starBtn) {
         starBtn.style.display = 'none';
+        const deleteBtn = document.getElementById('deleteProjectBtn');
+        if (deleteBtn) deleteBtn.style.display = 'none';
+    }
+}
+
+async function deleteCurrentProject() {
+    const projectSelect = document.getElementById('projectSelect');
+    const selectedOption = projectSelect?.selectedOptions[0];
+
+    if (!selectedOption || !selectedOption.value) {
+        UIRenderer.showToast('Vui lòng chọn project để xóa.', 'warning');
+        return;
+    }
+
+    const projectName = selectedOption.text;
+    const projectUrl = selectedOption.value;
+
+    if (!confirm(`Bạn có chắc chắn muốn xóa project "${projectName}"?\nHành động này không thể hoàn tác.`)) {
+        return;
+    }
+
+    try {
+        // Delete from Vercel Blob
+        const response = await fetch('/api/projects', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: projectUrl })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete project');
+        }
+
+        // Remove from starred projects
+        let starred = getStarredProjects();
+        starred = starred.filter(p => p !== projectName);
+        saveStarredProjects(starred);
+
+        // Remove from dropdown
+        projectSelect.removeChild(selectedOption);
+        projectSelect.value = '';
+
+        // Reset UI
+        updateProjectStarButton();
+        renderStarredProjects();
+
+        // Clear current data
+        DataManager.clearData();
+        UIRenderer.renderDataTable();
+
+        UIRenderer.showToast(`Đã xóa project: ${projectName}`, 'success');
+        addNotification(`Xóa project: ${projectName}`, '🗑️');
+
+    } catch (error) {
+        console.error('Delete project error:', error);
+        UIRenderer.showToast(`Lỗi: ${error.message}`, 'error');
     }
 }
 
@@ -1785,3 +1885,4 @@ window.toggleStarProject = toggleStarProject;
 window.loadStarredProject = loadStarredProject;
 window.renderStarredProjects = renderStarredProjects;
 window.updateProjectStarButton = updateProjectStarButton;
+window.deleteCurrentProject = deleteCurrentProject;
