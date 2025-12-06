@@ -1012,6 +1012,38 @@
                         </div>
                     </div>
 
+                    <!-- API Credentials Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔑 Alchemer API Credentials</h3>
+                            <span class="api-status" id="alchemerApiStatus">Not configured</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="form-hint" style="margin-bottom: 16px;">
+                                Để fetch quota từ Alchemer, bạn cần nhập API credentials.
+                                Lấy từ: Alchemer → Account → Integrations → API
+                            </p>
+                            <div class="form-group">
+                                <label>API Token:</label>
+                                <input type="text" id="alchemerApiToken" class="form-control"
+                                    placeholder="Nhập API Token">
+                            </div>
+                            <div class="form-group">
+                                <label>API Token Secret:</label>
+                                <input type="password" id="alchemerApiSecret" class="form-control"
+                                    placeholder="Nhập API Token Secret">
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-primary" onclick="saveAlchemerCredentials()">
+                                💾 Save Credentials
+                            </button>
+                            <button class="btn btn-outline" onclick="testAlchemerConnection()">
+                                🔗 Test Connection
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="card">
                         <div class="card-header">
                             <h3>📝 Template Management</h3>

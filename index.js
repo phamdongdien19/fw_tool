@@ -2331,3 +2331,95 @@ window.setAsActiveProject = setAsActiveProject;
 window.renderProjectsList = renderProjectsList;
 window.renderProjectInfoPanel = renderProjectInfoPanel;
 window.toggleProjectInfoPanel = toggleProjectInfoPanel;
+
+// ===== Alchemer API Credentials =====
+function loadAlchemerCredentialsForm() {
+    if (typeof AlchemerAPI === 'undefined') return;
+
+    const creds = AlchemerAPI.getCredentials();
+    const tokenInput = document.getElementById('alchemerApiToken');
+    const secretInput = document.getElementById('alchemerApiSecret');
+    const statusBadge = document.getElementById('alchemerApiStatus');
+
+    if (tokenInput && creds.apiToken) {
+        tokenInput.value = creds.apiToken;
+    }
+    if (secretInput && creds.apiSecret) {
+        secretInput.value = creds.apiSecret;
+    }
+
+    updateAlchemerApiStatus();
+}
+
+function updateAlchemerApiStatus() {
+    const statusBadge = document.getElementById('alchemerApiStatus');
+    if (!statusBadge || typeof AlchemerAPI === 'undefined') return;
+
+    if (AlchemerAPI.isConfigured()) {
+        statusBadge.textContent = '✓ Configured';
+        statusBadge.classList.add('configured');
+    } else {
+        statusBadge.textContent = 'Not configured';
+        statusBadge.classList.remove('configured');
+    }
+}
+
+function saveAlchemerCredentials() {
+    const apiToken = document.getElementById('alchemerApiToken').value.trim();
+    const apiSecret = document.getElementById('alchemerApiSecret').value.trim();
+
+    if (!apiToken || !apiSecret) {
+        UIRenderer.showToast('Vui lòng nhập đầy đủ API Token và Secret', 'warning');
+        return;
+    }
+
+    if (typeof AlchemerAPI === 'undefined') {
+        UIRenderer.showToast('AlchemerAPI không khả dụng', 'error');
+        return;
+    }
+
+    // Save credentials (surveyId can be empty for now)
+    AlchemerAPI.saveCredentials(apiToken, apiSecret, AlchemerAPI.config.surveyId || '');
+
+    updateAlchemerApiStatus();
+    UIRenderer.showToast('Đã lưu API credentials', 'success');
+}
+
+async function testAlchemerConnection() {
+    if (typeof AlchemerAPI === 'undefined') {
+        UIRenderer.showToast('AlchemerAPI không khả dụng', 'error');
+        return;
+    }
+
+    if (!AlchemerAPI.isConfigured()) {
+        UIRenderer.showToast('Vui lòng lưu credentials trước', 'warning');
+        return;
+    }
+
+    UIRenderer.showToast('Đang kiểm tra kết nối...', 'info');
+
+    try {
+        // Try to get account info or survey list to test connection
+        const url = AlchemerAPI.buildUrl('/account');
+        const response = await AlchemerAPI.fetchWithProxy(url);
+
+        if (response.result_ok) {
+            UIRenderer.showToast('✓ Kết nối thành công!', 'success');
+        } else {
+            UIRenderer.showToast('Lỗi: ' + (response.message || 'Connection failed'), 'error');
+        }
+    } catch (error) {
+        console.error('Test connection error:', error);
+        UIRenderer.showToast('Lỗi kết nối: ' + error.message, 'error');
+    }
+}
+
+// Load credentials when config view is shown
+document.addEventListener('DOMContentLoaded', () => {
+    loadAlchemerCredentialsForm();
+});
+
+// Make Alchemer functions global
+window.saveAlchemerCredentials = saveAlchemerCredentials;
+window.testAlchemerConnection = testAlchemerConnection;
+window.loadAlchemerCredentialsForm = loadAlchemerCredentialsForm;
