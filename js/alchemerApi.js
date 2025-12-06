@@ -613,4 +613,13 @@ const AlchemerAPI = {
 // Initialize when script loads
 if (typeof window !== 'undefined') {
     window.AlchemerAPI = AlchemerAPI;
+
+    // Auto-init to load credentials from localStorage
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            AlchemerAPI.init();
+        });
+    } else {
+        AlchemerAPI.init();
+    }
 }

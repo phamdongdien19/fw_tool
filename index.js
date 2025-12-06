@@ -2107,6 +2107,26 @@ function renderProjectDetail(projectId) {
 
     // Render quotas
     renderProjectQuotas(project);
+
+    // Render data info
+    const dataInfoContainer = document.getElementById('projectDataInfo');
+    if (dataInfoContainer) {
+        if (project.dataInfo && project.dataInfo.fileName) {
+            const importDate = new Date(project.dataInfo.importedAt).toLocaleString('vi-VN');
+            dataInfoContainer.innerHTML = `
+                <div class="data-info-content">
+                    <p><strong>File:</strong> ${project.dataInfo.fileName}</p>
+                    <p><strong>Số dòng:</strong> ${project.dataInfo.rowCount || 0}</p>
+                    <p><strong>Import lúc:</strong> ${importDate}</p>
+                </div>
+                <button class="btn btn-sm btn-outline" onclick="loadProjectData('${projectId}')">
+                    📂 Load Data
+                </button>
+            `;
+        } else {
+            dataInfoContainer.innerHTML = '<p class="no-data-text">Chưa có data. Click "Import Data" để thêm.</p>';
+        }
+    }
 }
 
 function renderProjectQuotas(project) {
@@ -2286,6 +2306,25 @@ function renderProjectInfoPanel() {
     }
 
     const summary = ProjectManager.getQuotaSummary(activeProject.id);
+    const quotas = activeProject.quotas || [];
+
+    // Build quota details HTML
+    let quotaDetailsHtml = '';
+    if (quotas.length > 0) {
+        quotaDetailsHtml = quotas.map(q => {
+            const percent = q.limit > 0 ? Math.round((q.count / q.limit) * 100) : 0;
+            const barClass = percent >= 100 ? 'complete' : percent >= 80 ? 'near' : '';
+            return `
+                <div class="quota-item-mini">
+                    <span class="quota-name">${q.name}</span>
+                    <span class="quota-count">${q.count}/${q.limit}</span>
+                    <div class="quota-bar-mini ${barClass}">
+                        <div class="quota-fill-mini" style="width: ${Math.min(100, percent)}%"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 
     container.innerHTML = `
         <div class="project-info-panel">
@@ -2297,11 +2336,20 @@ function renderProjectInfoPanel() {
                 ${activeProject.criteria ? `<div class="info-line"><strong>📌 Tiêu chí:</strong> ${activeProject.criteria}</div>` : ''}
                 ${activeProject.notes ? `<div class="info-line"><strong>💡</strong> ${activeProject.notes}</div>` : ''}
                 ${summary ? `
-                    <div class="quota-mini">
-                        <span class="quota-mini-item">Hoàn thành: ${summary.totalCompleted}/${summary.totalLimit}</span>
-                        <span class="quota-mini-item remaining">Còn thiếu: ${summary.totalRemaining}</span>
+                    <div class="quota-summary-mini">
+                        <div class="quota-headline">
+                            <strong>📊 Quota:</strong>
+                            <span class="quota-total">${summary.totalCompleted}/${summary.totalLimit}</span>
+                            <span class="quota-remaining">(còn ${summary.totalRemaining})</span>
+                        </div>
+                        <div class="quota-progress-mini">
+                            <div class="quota-bar-full" style="width: ${Math.min(100, Math.round((summary.totalCompleted / summary.totalLimit) * 100))}%"></div>
+                        </div>
+                        <div class="quota-details-mini">
+                            ${quotaDetailsHtml}
+                        </div>
                     </div>
-                ` : ''}
+                ` : '<div class="info-line"><em>Chưa có dữ liệu quota</em></div>'}
             </div>
         </div>
     `;
@@ -2423,3 +2471,126 @@ document.addEventListener('DOMContentLoaded', () => {
 window.saveAlchemerCredentials = saveAlchemerCredentials;
 window.testAlchemerConnection = testAlchemerConnection;
 window.loadAlchemerCredentialsForm = loadAlchemerCredentialsForm;
+
+// ===== Import Data for Projects =====
+function importDataForProject() {
+    if (!selectedProjectId) {
+        UIRenderer.showToast('Vui lòng chọn project trước', 'warning');
+        return;
+    }
+
+    // Trigger file input
+    document.getElementById('projectFileInput').click();
+}
+
+async function handleProjectFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!selectedProjectId) {
+        UIRenderer.showToast('Vui lòng chọn project trước', 'warning');
+        return;
+    }
+
+    const project = ProjectManager.getProject(selectedProjectId);
+    if (!project) {
+        UIRenderer.showToast('Project không tồn tại', 'error');
+        return;
+    }
+
+    UIRenderer.showToast('Đang import ' + file.name + '...', 'info');
+
+    try {
+        // Use DataManager to import the file
+        const result = await DataManager.importFile(file);
+
+        if (result.success) {
+            // Save data to server with project name
+            const saveResult = await StorageManager.saveProject(project.name);
+
+            // Update project data info display
+            updateProjectDataInfo(project.id, {
+                fileName: file.name,
+                rowCount: result.rowCount || DataManager.getData().length,
+                importedAt: new Date().toISOString()
+            });
+
+            // Also set this as active project
+            ProjectManager.setActiveProject(selectedProjectId);
+
+            UIRenderer.showToast(`Đã import ${file.name} cho project "${project.name}"`, 'success');
+
+            // Render the data table
+            UIRenderer.renderDataTable();
+
+            // Refresh project detail to show data info
+            renderProjectDetail(selectedProjectId);
+        } else {
+            throw new Error(result.error || 'Import failed');
+        }
+    } catch (error) {
+        console.error('Import error:', error);
+        UIRenderer.showToast('Lỗi import: ' + error.message, 'error');
+    }
+
+    // Reset file input
+    event.target.value = '';
+}
+
+function updateProjectDataInfo(projectId, dataInfo) {
+    const project = ProjectManager.getProject(projectId);
+    if (!project) return;
+
+    // Update project with data info
+    ProjectManager.updateProject(projectId, {
+        dataInfo: dataInfo
+    });
+
+    // Update UI
+    const infoContainer = document.getElementById('projectDataInfo');
+    if (infoContainer && dataInfo) {
+        const importDate = new Date(dataInfo.importedAt).toLocaleString('vi-VN');
+        infoContainer.innerHTML = `
+            <div class="data-info-content">
+                <p><strong>File:</strong> ${dataInfo.fileName}</p>
+                <p><strong>Số dòng:</strong> ${dataInfo.rowCount}</p>
+                <p><strong>Import lúc:</strong> ${importDate}</p>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="loadProjectData('${projectId}')">
+                📂 Load Data
+            </button>
+        `;
+    }
+}
+
+async function loadProjectData(projectId) {
+    const project = ProjectManager.getProject(projectId);
+    if (!project) {
+        UIRenderer.showToast('Project không tồn tại', 'error');
+        return;
+    }
+
+    UIRenderer.showToast('Đang load data...', 'info');
+
+    try {
+        const result = await StorageManager.loadProject(project.name);
+        if (result.success) {
+            // Set as active and switch view
+            ProjectManager.setActiveProject(projectId);
+            switchView('data');
+            UIRenderer.showToast(`Đã load data cho project "${project.name}"`, 'success');
+        } else {
+            throw new Error(result.error || 'Load failed');
+        }
+    } catch (error) {
+        console.error('Load error:', error);
+        UIRenderer.showToast('Lỗi load data: ' + error.message, 'error');
+    }
+}
+
+// Make project data functions global
+window.importDataForProject = importDataForProject;
+window.handleProjectFileImport = handleProjectFileImport;
+window.updateProjectDataInfo = updateProjectDataInfo;
+window.loadProjectData = loadProjectData;
+

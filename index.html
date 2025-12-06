@@ -657,11 +657,26 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <!-- Data Info Section -->
+                                        <div class="project-data-section">
+                                            <div class="data-header">
+                                                <h4>📂 Project Data</h4>
+                                            </div>
+                                            <div class="data-info" id="projectDataInfo">
+                                                <p class="no-data-text">Chưa có data. Click "Import Data" để thêm.</p>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="card-footer">
+                                        <button class="btn btn-primary" onclick="importDataForProject()">
+                                            📥 Import Data
+                                        </button>
                                         <button class="btn btn-secondary" onclick="setAsActiveProject()">
                                             ⭐ Set as Active
                                         </button>
+                                        <input type="file" id="projectFileInput" accept=".csv,.xlsx,.xls"
+                                            style="display: none;" onchange="handleProjectFileImport(event)">
                                     </div>
                                 </div>
 

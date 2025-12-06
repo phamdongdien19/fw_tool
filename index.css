@@ -3007,3 +3007,141 @@ textarea.form-control {
     color: var(--color-primary);
     font-weight: 500;
 }
+
+/* Enhanced Quota Display in Filter & Batch */
+.quota-summary-mini {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+}
+
+.quota-headline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.quota-total {
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.quota-remaining {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.quota-progress-mini {
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.quota-bar-full {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.quota-details-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.quota-item-mini {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.quota-item-mini .quota-name {
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quota-item-mini .quota-count {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.quota-bar-mini {
+    width: 60px;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.quota-fill-mini {
+    height: 100%;
+    background: var(--color-success);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.quota-bar-mini.near .quota-fill-mini {
+    background: var(--color-warning);
+}
+
+.quota-bar-mini.complete .quota-fill-mini {
+    background: var(--color-primary);
+}
+
+/* Project Data Section */
+.project-data-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.project-data-section h4 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.data-info {
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+}
+
+.data-info-content p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.data-info-content p strong {
+    color: var(--text-primary);
+}
+
+.no-data-text {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+/* API Status Badge */
+.api-status {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.api-status.configured {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--color-success);
+}
