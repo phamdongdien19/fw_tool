@@ -1476,9 +1476,17 @@ async function importUrlModule() {
 
 function initUrlFilters() {
     const colSelect = document.getElementById('urlFilterColumn');
+    if (!colSelect) return;
+
     colSelect.innerHTML = '<option value="">-- Lọc theo cột --</option>' +
         urlImportState.headers.map(h => `<option value="${h}">${truncateText(h, 20)}</option>`).join('');
-    document.getElementById('urlFilterValue').innerHTML = '<option value="">-- Tất cả --</option>';
+
+    // Reset filter values list
+    const valuesList = document.getElementById('urlFilterValuesList');
+    if (valuesList) valuesList.innerHTML = '';
+
+    const filterBtn = document.getElementById('urlFilterValBtn');
+    if (filterBtn) filterBtn.textContent = 'Chọn giá trị ▼';
 }
 
 function updateUrlFilterValues() {
@@ -1677,14 +1685,37 @@ function changeUrlRowsPerPage(value) {
 
 function saveUrlToHistory(url, projectName, rowCount) {
     let history = JSON.parse(localStorage.getItem(URL_HISTORY_KEY) || '[]');
-    history = history.filter(h => h.url !== url);
+
+    // Extract base URL for comparison (without query params for Google Sheets etc)
+    const getBaseUrl = (urlStr) => {
+        try {
+            const urlObj = new URL(urlStr);
+            return urlObj.origin + urlObj.pathname;
+        } catch {
+            return urlStr;
+        }
+    };
+
+    const baseUrl = getBaseUrl(url);
+
+    // Remove existing entry with same base URL OR same project name (if provided)
+    history = history.filter(h => {
+        const existingBase = getBaseUrl(h.url);
+        const sameBaseUrl = existingBase === baseUrl;
+        const sameProject = projectName && h.projectName && h.projectName === projectName;
+        return !sameBaseUrl && !sameProject;
+    });
+
+    // Add new entry at the beginning
     history.unshift({
         url,
         projectName,
         rowCount,
         timestamp: new Date().toISOString()
     });
-    history = history.slice(0, 10);
+
+    // Keep only last 20 items (increased from 10)
+    history = history.slice(0, 20);
     localStorage.setItem(URL_HISTORY_KEY, JSON.stringify(history));
     loadUrlHistoryList();
 }
