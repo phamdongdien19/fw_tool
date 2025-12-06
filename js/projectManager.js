@@ -59,27 +59,29 @@ const ProjectManager = {
             const result = await response.json();
             const serverProjects = result.projects || [];
 
-            // Merge server data with local (server wins for same ID)
-            if (serverProjects.length > 0) {
-                const merged = [...serverProjects];
-                // Add any local-only projects
-                this.projects.forEach(localP => {
-                    if (!merged.find(p => p.id === localP.id)) {
-                        merged.push(localP);
-                    }
-                });
-                this.projects = merged;
-                this.saveToLocalStorage();
+            // Merge server data with local
+            const localProjects = this.projects || [];
+            const merged = [...serverProjects];
 
-                // Re-render if function exists
-                if (typeof renderProjectsList === 'function') {
-                    renderProjectsList();
+            // Add any local-only projects
+            localProjects.forEach(localP => {
+                if (!merged.find(p => p.id === localP.id)) {
+                    merged.push(localP);
                 }
-            }
+            });
+
+            this.projects = merged;
+            this.saveToLocalStorage();
+
+            console.log('Server sync complete:', merged.length, 'projects');
         } catch (e) {
             console.warn('Server sync failed (using local data):', e.message);
         } finally {
             this.isLoading = false;
+            // Always re-render after sync attempt
+            if (typeof renderProjectsList === 'function') {
+                renderProjectsList();
+            }
         }
     },
 
