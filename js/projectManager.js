@@ -49,9 +49,9 @@ const ProjectManager = {
         try {
             this.isLoading = true;
 
-            // Add timeout of 5 seconds
+            // Add timeout of 15 seconds (increased for Vercel cold starts)
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
 
             const response = await fetch(this.API_URL, { signal: controller.signal });
             clearTimeout(timeoutId);
