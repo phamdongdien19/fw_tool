@@ -2206,7 +2206,7 @@ function openProjectModal(editId = null) {
         </div>
     `;
 
-    showModal(
+    openModal(
         isEdit ? 'Chỉnh sửa Project' : 'Tạo Project mới',
         modalBody,
         () => saveProjectFromModal(editId)
