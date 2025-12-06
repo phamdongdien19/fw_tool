@@ -29,6 +29,11 @@ const UIRenderer = {
         const allData = data || DataManager.getData();
         const allHeaders = headers || DataManager.getHeaders();
 
+        // Get visible columns (use global visibleColumns or default to all)
+        const displayHeaders = typeof visibleColumns !== 'undefined' && visibleColumns.size > 0
+            ? allHeaders.filter(h => visibleColumns.has(h))
+            : allHeaders;
+
         // Apply filters
         let displayData, displayIndices;
         if (FilterEngine.hasActiveFilters()) {
@@ -40,9 +45,10 @@ const UIRenderer = {
             displayIndices = allData.map((_, i) => i);
         }
 
-        // Update counts
-        document.getElementById('visibleCount').textContent = displayData.length;
-        document.getElementById('totalCount').textContent = allData.length;
+        // Update pagination state
+        if (typeof updatePagination === 'function') {
+            updatePagination(displayData);
+        }
 
         // Show/hide empty state
         if (allData.length === 0) {
@@ -53,27 +59,28 @@ const UIRenderer = {
         }
         emptyState.style.display = 'none';
 
-        // Render headers
+        // Render headers with visible columns only
         tableHead.innerHTML = `
             <tr>
                 <th class="row-number-header">#</th>
-                ${allHeaders.map(h => `<th>${this.escapeHtml(h)}</th>`).join('')}
+                ${displayHeaders.map(h => `<th>${this.escapeHtml(h)}</th>`).join('')}
             </tr>
         `;
 
-        // Pagination
-        const start = this.currentPage * this.pageSize;
-        const end = Math.min(start + this.pageSize, displayData.length);
+        // Use global pagination state
+        const pageState = typeof paginationState !== 'undefined' ? paginationState : { currentPage: 1, rowsPerPage: 100 };
+        const start = (pageState.currentPage - 1) * pageState.rowsPerPage;
+        const end = Math.min(start + pageState.rowsPerPage, displayData.length);
         const pageData = displayData.slice(start, end);
         const pageIndices = displayIndices.slice(start, end);
 
-        // Render rows
+        // Render rows with visible columns only
         tableBody.innerHTML = pageData.map((row, i) => {
             const originalIndex = pageIndices[i];
             return `
                 <tr data-index="${originalIndex}">
                     <td class="row-number">${originalIndex + 1}</td>
-                    ${allHeaders.map(h => {
+                    ${displayHeaders.map(h => {
                 const value = row[h];
                 const displayValue = value !== null && value !== undefined ? value : '';
 
@@ -94,6 +101,11 @@ const UIRenderer = {
 
         // Update filter status
         document.getElementById('filterStatus').textContent = FilterEngine.getSummary();
+
+        // Initialize column visibility list if needed
+        if (typeof initColumnVisibility === 'function' && visibleColumns.size === 0 && allHeaders.length > 0) {
+            initColumnVisibility();
+        }
     },
 
     /**

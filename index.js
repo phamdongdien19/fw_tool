@@ -7,6 +7,17 @@
 let currentView = 'dashboard';
 let pendingFile = null;
 
+// ===== Pagination State =====
+let paginationState = {
+    currentPage: 1,
+    rowsPerPage: 100,
+    totalRows: 0,
+    totalPages: 1
+};
+
+// ===== Column Visibility State =====
+let visibleColumns = new Set(); // All visible by default
+
 // ===== Initialization =====
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize modules
@@ -925,4 +936,182 @@ document.addEventListener('click', (e) => {
             d.style.display = 'none';
         });
     }
+    // Also close column visibility panel
+    if (!e.target.closest('.column-visibility-dropdown')) {
+        const panel = document.getElementById('columnVisibilityPanel');
+        if (panel) panel.style.display = 'none';
+    }
 });
+
+// ===== Shuffle Data =====
+function shuffleData() {
+    if (!DataManager.hasData()) {
+        UIRenderer.showToast('Không có dữ liệu để shuffle.', 'warning');
+        return;
+    }
+
+    DataManager.saveUndoState();
+
+    // Fisher-Yates shuffle
+    const data = DataManager.data;
+    for (let i = data.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [data[i], data[j]] = [data[j], data[i]];
+    }
+
+    // Re-assign row indices
+    data.forEach((row, index) => {
+        row._rowIndex = index;
+    });
+
+    UIRenderer.renderDataTable();
+    UIRenderer.showToast(`Đã shuffle ${data.length} dòng dữ liệu!`, 'success');
+
+    // Mark dirty for auto-save
+    if (typeof StorageManager !== 'undefined') {
+        StorageManager.markDirty();
+    }
+}
+
+// ===== Pagination =====
+function updatePagination(filteredData = null) {
+    const data = filteredData || DataManager.getData();
+    paginationState.totalRows = data.length;
+    paginationState.totalPages = Math.ceil(data.length / paginationState.rowsPerPage) || 1;
+
+    // Ensure current page is valid
+    if (paginationState.currentPage > paginationState.totalPages) {
+        paginationState.currentPage = paginationState.totalPages;
+    }
+    if (paginationState.currentPage < 1) {
+        paginationState.currentPage = 1;
+    }
+
+    renderPaginationControls();
+}
+
+function renderPaginationControls() {
+    const { currentPage, totalPages, rowsPerPage, totalRows } = paginationState;
+
+    // Update page info
+    const pageInfo = document.getElementById('pageInfo');
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    // Update visible/total count
+    const start = (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, totalRows);
+    document.getElementById('visibleCount').textContent = totalRows > 0 ? `${start}-${end}` : '0';
+    document.getElementById('totalCount').textContent = totalRows;
+
+    // Enable/disable buttons
+    document.getElementById('pageFirst').disabled = currentPage === 1;
+    document.getElementById('pagePrev').disabled = currentPage === 1;
+    document.getElementById('pageNext').disabled = currentPage === totalPages;
+    document.getElementById('pageLast').disabled = currentPage === totalPages;
+
+    // Render page numbers
+    const numbersContainer = document.getElementById('pageNumbers');
+    if (numbersContainer) {
+        numbersContainer.innerHTML = '';
+        const maxButtons = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+        let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+        startPage = Math.max(1, endPage - maxButtons + 1);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.className = `btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-outline'}`;
+            btn.textContent = i;
+            btn.onclick = () => goToPage(i);
+            numbersContainer.appendChild(btn);
+        }
+    }
+}
+
+function goToPage(action) {
+    const { currentPage, totalPages } = paginationState;
+
+    if (action === 'first') {
+        paginationState.currentPage = 1;
+    } else if (action === 'prev') {
+        paginationState.currentPage = Math.max(1, currentPage - 1);
+    } else if (action === 'next') {
+        paginationState.currentPage = Math.min(totalPages, currentPage + 1);
+    } else if (action === 'last') {
+        paginationState.currentPage = totalPages;
+    } else if (typeof action === 'number') {
+        paginationState.currentPage = action;
+    }
+
+    UIRenderer.renderDataTable();
+}
+
+function changeRowsPerPage(value) {
+    paginationState.rowsPerPage = parseInt(value);
+    paginationState.currentPage = 1;
+    UIRenderer.renderDataTable();
+}
+
+// ===== Column Visibility =====
+function initColumnVisibility() {
+    const headers = DataManager.getHeaders();
+    visibleColumns = new Set(headers); // All visible by default
+    renderColumnVisibilityList();
+}
+
+function renderColumnVisibilityList() {
+    const list = document.getElementById('columnVisibilityList');
+    if (!list) return;
+
+    const headers = DataManager.getHeaders();
+    list.innerHTML = headers.map(col => `
+        <label>
+            <input type="checkbox" 
+                ${visibleColumns.has(col) ? 'checked' : ''} 
+                onchange="toggleColumn('${col}', this.checked)">
+            <span>${col}</span>
+        </label>
+    `).join('');
+}
+
+function toggleColumn(column, visible) {
+    if (visible) {
+        visibleColumns.add(column);
+    } else {
+        visibleColumns.delete(column);
+    }
+    UIRenderer.renderDataTable();
+}
+
+function toggleAllColumns(showAll) {
+    if (showAll) {
+        visibleColumns = new Set(DataManager.getHeaders());
+    } else {
+        visibleColumns.clear();
+    }
+    renderColumnVisibilityList();
+    UIRenderer.renderDataTable();
+}
+
+// Toggle column visibility panel
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('columnVisibilityBtn');
+    if (btn) {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const panel = document.getElementById('columnVisibilityPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        };
+    }
+});
+
+// Make functions global
+window.shuffleData = shuffleData;
+window.goToPage = goToPage;
+window.changeRowsPerPage = changeRowsPerPage;
+window.toggleColumn = toggleColumn;
+window.toggleAllColumns = toggleAllColumns;
+window.initColumnVisibility = initColumnVisibility;
+window.updatePagination = updatePagination;
