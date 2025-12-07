@@ -2102,6 +2102,15 @@ function selectProject(projectId) {
     selectedProjectId = projectId;
     renderProjectsList();
     renderProjectDetail(projectId);
+
+    // Auto-refresh quota status if project has surveyId
+    const project = ProjectManager.getProject(projectId);
+    if (project && project.surveyId && typeof AlchemerAPI !== 'undefined' && AlchemerAPI.isConfigured()) {
+        // Auto-fetch quotas in background
+        setTimeout(() => {
+            refreshProjectQuotas();
+        }, 300);
+    }
 }
 
 function renderProjectDetail(projectId) {

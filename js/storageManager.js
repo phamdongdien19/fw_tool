@@ -38,19 +38,31 @@ const StorageManager = {
      */
     async autoLoadLastProject() {
         const lastProject = localStorage.getItem('fw_tools_last_project');
+        console.log(`[StorageManager] Checking for last project: ${lastProject || 'none'}`);
+
         if (lastProject) {
-            console.log(`[StorageManager] Auto-loading last project: ${lastProject}`);
+            console.log(`[StorageManager] Will auto-load project: ${lastProject}`);
             // Delay slightly to ensure UI is ready
             setTimeout(async () => {
-                const result = await this.loadProject(lastProject);
-                if (result.success) {
-                    // Update the project dropdown selection
-                    const projectSelect = document.getElementById('projectSelect');
-                    if (projectSelect) {
-                        projectSelect.value = lastProject;
+                try {
+                    console.log(`[StorageManager] Starting loadProject for: ${lastProject}`);
+                    const result = await this.loadProject(lastProject);
+                    console.log(`[StorageManager] loadProject result:`, result);
+
+                    if (result.success) {
+                        // Update the project dropdown selection
+                        const projectSelect = document.getElementById('projectSelect');
+                        if (projectSelect) {
+                            projectSelect.value = lastProject;
+                        }
+                        console.log(`[StorageManager] Auto-load complete. DataManager has ${DataManager.getRowCount()} rows`);
                     }
+                } catch (error) {
+                    console.error(`[StorageManager] Auto-load failed:`, error);
                 }
             }, 500);
+        } else {
+            console.log(`[StorageManager] No last project found in localStorage`);
         }
     },
 
