@@ -310,13 +310,14 @@ function confirmImport() {
     UIRenderer.updateFileInfo();
     UIRenderer.showToast(`Đã import ${DataManager.getRowCount()} dòng từ ${pendingFile.name}`, 'success');
 
-    // Auto-save logic
+    // Auto-save logic - save immediately to ensure persistence
     if (typeof StorageManager !== 'undefined') {
         // If no project selected, use filename
         if (!StorageManager.currentProject) {
             StorageManager.currentProject = pendingFile.name.split('.')[0];
         }
-        StorageManager.markDirty();
+        // Save immediately, don't wait for auto-save delay
+        StorageManager.saveProject();
     }
 
     // Switch to data view
@@ -750,12 +751,13 @@ async function importFromUrl() {
 
         DataManager.setData(headers, data, result.filename || 'URL Import');
 
-        // Auto-save logic
+        // Auto-save logic - save immediately to ensure persistence
         if (typeof StorageManager !== 'undefined') {
             if (!StorageManager.currentProject) {
                 StorageManager.currentProject = result.filename || 'URL Import';
             }
-            StorageManager.markDirty();
+            // Save immediately, don't wait for auto-save delay
+            StorageManager.saveProject();
         }
 
         progressFill.style.width = '100%';
