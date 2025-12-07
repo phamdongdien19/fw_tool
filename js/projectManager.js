@@ -242,7 +242,7 @@ const ProjectManager = {
         } catch (e) {
             console.error('Failed to save project to server:', e);
             // Fallback: save to localStorage
-            localStorage.setItem('fw_tools_projects', JSON.stringify(this.projects));
+            this.saveToLocalStorage();
             throw e;
         }
     },
@@ -264,7 +264,12 @@ const ProjectManager = {
             updatedProject.originalProjectName = originalName;
         }
 
-        return this.saveProjectToServer(updatedProject);
+        // Strip data and headers for metadata-only update to avoid 413 Payload Too Large
+        const projectToSave = { ...updatedProject };
+        projectToSave.data = [];
+        projectToSave.headers = [];
+
+        return this.saveProjectToServer(projectToSave);
     },
 
     /**
