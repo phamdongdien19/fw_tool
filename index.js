@@ -2293,18 +2293,23 @@ function editCurrentProject() {
     }
 }
 
-function deleteCurrentProjectMgmt() {
+async function deleteCurrentProjectMgmt() {
     if (!selectedProjectId) return;
 
     const project = ProjectManager.getProject(selectedProjectId);
     if (!project) return;
 
     if (confirm(`Xóa project "${project.name}"?\nHành động này không thể hoàn tác.`)) {
-        ProjectManager.deleteProject(selectedProjectId);
-        selectedProjectId = null;
-        renderProjectsList();
-        renderProjectDetail(null);
-        UIRenderer.showToast('Đã xóa project', 'success');
+        try {
+            await ProjectManager.deleteProject(selectedProjectId);
+            selectedProjectId = null;
+            renderProjectsList();
+            renderProjectDetail(null);
+            UIRenderer.showToast('Đã xóa project', 'success');
+        } catch (error) {
+            console.error('Delete project failed:', error);
+            UIRenderer.showToast(`Lỗi xóa project: ${error.message}`, 'error');
+        }
     }
 }
 

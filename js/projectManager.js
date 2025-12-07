@@ -292,23 +292,24 @@ const ProjectManager = {
      */
     async deleteProject(id) {
         const index = this.projects.findIndex(p => p.id === id);
-        if (index === -1) return false;
+        if (index === -1) {
+            throw new Error('Project not found');
+        }
 
         const project = this.projects[index];
         const projectName = project.name;
 
+        // Delete from server FIRST - if this fails, don't delete locally
+        if (projectName) {
+            await this.deleteProjectFromServer(projectName);
+        }
+
+        // Only remove from local after server delete succeeds
         this.projects.splice(index, 1);
         this.saveToLocalStorage();
 
         if (this.activeProjectId === id) {
             this.activeProjectId = null;
-        }
-
-        // Delete from server (async) - use project name
-        if (projectName) {
-            this.deleteProjectFromServer(projectName).catch(e => {
-                console.error('Background delete failed:', e);
-            });
         }
 
         return true;
