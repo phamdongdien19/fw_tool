@@ -1,4 +1,4 @@
-import { list } from '@vercel/blob';
+import { head } from '@vercel/blob';
 
 export default async function handler(req, res) {
     // Enable CORS
@@ -21,20 +21,22 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Project name is required' });
         }
 
-        // List blobs to find the project
-        const { blobs } = await list({
-            prefix: `projects/${name}.json`,
-        });
+        // Use head() instead of list() - head() is a Simple Operation, not Advanced
+        const blobPath = `projects/${name}.json`;
+        let blobInfo;
 
-        if (blobs.length === 0) {
+        try {
+            blobInfo = await head(blobPath);
+        } catch (headErr) {
+            // head() throws if blob doesn't exist
             return res.status(404).json({
                 error: 'Project not found',
                 projectName: name
             });
         }
 
-        // Fetch the blob content
-        const url = new URL(blobs[0].url);
+        // Fetch the blob content using the URL from head()
+        const url = new URL(blobInfo.url);
         url.searchParams.set('t', Date.now());
         const response = await fetch(url.toString(), { cache: 'no-store' });
 

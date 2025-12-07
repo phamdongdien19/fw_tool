@@ -1,5 +1,7 @@
-import { put, list, del, head } from '@vercel/blob';
+import { put, del, head } from '@vercel/blob';
 import { gunzipSync } from 'zlib';
+
+const PROJECTS_INDEX_PATH = 'projects/_index.json';
 
 export const config = {
     api: {
@@ -14,6 +16,81 @@ const getRawBody = async (req) => {
     }
     return Buffer.concat(chunks);
 };
+
+// Helper function to fetch existing project using head() instead of list()
+async function fetchExistingProject(projectName) {
+    const blobPath = `projects/${projectName}.json`;
+
+    try {
+        // head() is a Simple Operation, not Advanced
+        const blobInfo = await head(blobPath);
+
+        // Fetch the blob content
+        const url = new URL(blobInfo.url);
+        url.searchParams.set('t', Date.now());
+        const response = await fetch(url.toString(), { cache: 'no-store' });
+
+        if (response.ok) {
+            const projectData = await response.json();
+            return { data: projectData, url: blobInfo.url };
+        }
+        return null;
+    } catch (err) {
+        // head() throws if blob doesn't exist - this is expected for new projects
+        return null;
+    }
+}
+
+// Helper function to get projects index
+async function getProjectsIndex() {
+    try {
+        const blobInfo = await head(PROJECTS_INDEX_PATH);
+        const url = new URL(blobInfo.url);
+        url.searchParams.set('t', Date.now());
+        const response = await fetch(url.toString(), { cache: 'no-store' });
+
+        if (response.ok) {
+            const indexData = await response.json();
+            return indexData.projects || [];
+        }
+        return [];
+    } catch (err) {
+        return [];
+    }
+}
+
+// Helper function to update projects index
+async function updateProjectsIndex(project, blobUrl) {
+    try {
+        let projects = await getProjectsIndex();
+
+        // Update or add project info
+        const existingIndex = projects.findIndex(p => p.name === project.projectName);
+        const projectInfo = {
+            name: project.projectName,
+            url: blobUrl,
+            size: JSON.stringify(project).length,
+            uploadedAt: new Date().toISOString(),
+            rowCount: project.metadata?.rowCount || 0
+        };
+
+        if (existingIndex >= 0) {
+            projects[existingIndex] = projectInfo;
+        } else {
+            projects.unshift(projectInfo);
+        }
+
+        await put(PROJECTS_INDEX_PATH, JSON.stringify({ projects }), {
+            access: 'public',
+            contentType: 'application/json',
+            addRandomSuffix: false,
+        });
+
+        console.log('[save.js] Updated projects index with', projects.length, 'projects');
+    } catch (err) {
+        console.warn('[save.js] Failed to update projects index:', err.message);
+    }
+}
 
 export default async function handler(req, res) {
     // Enable CORS
@@ -43,7 +120,6 @@ export default async function handler(req, res) {
                 reqBody = JSON.parse(decompressed.toString('utf-8'));
             } catch (e) {
                 console.error('Decompression error', e);
-                // Try parsing as raw JSON if decompression fails (fallback)
                 try {
                     reqBody = JSON.parse(reqBody.toString('utf-8'));
                 } catch (e2) {
@@ -51,7 +127,6 @@ export default async function handler(req, res) {
                 }
             }
         } else {
-            // Standard JSON
             try {
                 reqBody = JSON.parse(reqBody.toString('utf-8'));
             } catch (e) {
@@ -75,65 +150,31 @@ export default async function handler(req, res) {
 
         // 1. Check for Rename Migration (if originalProjectName provided)
         if (originalProjectName && originalProjectName !== projectName) {
-            try {
-                const { blobs } = await list({ prefix: `projects/${originalProjectName}.json` });
-                if (blobs.length > 0) {
-                    const url = new URL(blobs[0].url);
-                    url.searchParams.set('t', Date.now());
-                    const response = await fetch(url.toString(), { cache: 'no-store' });
-
-                    if (response.ok) {
-                        const oldProject = await response.json();
-
-                        // Migrate data from old project
-                        if (!finalData || finalData.length === 0) {
-                            finalData = oldProject.data || [];
-                            finalHeaders = oldProject.headers || [];
-                            console.log(`[save.js] Migrated ${finalData.length} rows from "${originalProjectName}" to "${projectName}"`);
-                        }
-
-                        // Use old metadata as base
-                        preservedMetadata = oldProject.metadata || {};
-                        originalProjectUrl = blobs[0].url;
-                    }
+            const oldProject = await fetchExistingProject(originalProjectName);
+            if (oldProject) {
+                if (!finalData || finalData.length === 0) {
+                    finalData = oldProject.data.data || [];
+                    finalHeaders = oldProject.data.headers || [];
+                    console.log(`[save.js] Migrated ${finalData.length} rows from "${originalProjectName}" to "${projectName}"`);
                 }
-            } catch (err) {
-                console.warn('[save.js] Failed to fetch original project for migration:', err);
+                preservedMetadata = oldProject.data.metadata || {};
+                originalProjectUrl = oldProject.url;
             }
         }
 
-        // 2. If NOT renaming (or migration failed), check for existing target project to merge
+        // 2. If NOT renaming, check for existing target project to merge
         if (!originalProjectUrl) {
-            try {
-                const { blobs } = await list({
-                    prefix: `projects/${projectName}.json`,
-                });
+            const existingProject = await fetchExistingProject(projectName);
+            if (existingProject) {
+                preservedMetadata = existingProject.data.metadata || {};
 
-                if (blobs.length > 0) {
-                    // Found existing project - fetch it for merging
-                    const url = new URL(blobs[0].url);
-                    url.searchParams.set('t', Date.now());
-                    const response = await fetch(url.toString(), { cache: 'no-store' });
-
-                    if (response.ok) {
-                        const existingProject = await response.json();
-
-                        // Capture existing metadata to prevent overwriting
-                        preservedMetadata = existingProject.metadata || {};
-
-                        // If this is a metadata-only update (e.g. from ProjectManager), preserve existing data
-                        if (isMetadataUpdate && (!finalData || finalData.length === 0)) {
-                            finalData = existingProject.data || [];
-                            finalHeaders = existingProject.headers || [];
-                            console.log(`[save.js] Preserved ${finalData.length} rows for metadata update of "${projectName}"`);
-                        } else {
-                            console.log(`[save.js] Check found existing project "${projectName}", merging metadata.`);
-                        }
-                    }
+                if (isMetadataUpdate && (!finalData || finalData.length === 0)) {
+                    finalData = existingProject.data.data || [];
+                    finalHeaders = existingProject.data.headers || [];
+                    console.log(`[save.js] Preserved ${finalData.length} rows for metadata update of "${projectName}"`);
+                } else {
+                    console.log(`[save.js] Check found existing project "${projectName}", merging metadata.`);
                 }
-            } catch (err) {
-                console.warn('[save.js] Failed to fetch existing project for merge:', err);
-                // Continue with provided data/metadata if fetch fails
             }
         }
 
@@ -143,8 +184,8 @@ export default async function handler(req, res) {
             headers: finalHeaders,
             data: finalData,
             metadata: {
-                ...preservedMetadata,  // Keep existing fields (like notes, criteria, or config)
-                ...metadata,           // Overwrite with new fields provided in this request
+                ...preservedMetadata,
+                ...metadata,
                 savedAt: new Date().toISOString(),
                 rowCount: finalData.length,
                 columnCount: finalHeaders.length
@@ -165,11 +206,23 @@ export default async function handler(req, res) {
             addRandomSuffix: false,
         });
 
-        // Delete old project if rename was successful (and we have the url)
+        // Update projects index (for list.js to use without list() operation)
+        await updateProjectsIndex(projectData, blob.url);
+
+        // Delete old project if rename was successful
         if (originalProjectUrl) {
             try {
                 await del(originalProjectUrl);
                 console.log(`[save.js] Deleted old project: ${originalProjectUrl}`);
+
+                // Also remove from index
+                let projects = await getProjectsIndex();
+                projects = projects.filter(p => p.name !== originalProjectName);
+                await put(PROJECTS_INDEX_PATH, JSON.stringify({ projects }), {
+                    access: 'public',
+                    contentType: 'application/json',
+                    addRandomSuffix: false,
+                });
             } catch (err) {
                 console.warn('[save.js] Failed to delete old project:', err);
             }
