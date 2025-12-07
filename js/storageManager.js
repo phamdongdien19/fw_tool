@@ -116,19 +116,45 @@ const StorageManager = {
     },
 
     /**
-     * Streaming upload for large files (bypasses 4.5MB body limit)
+     * Compressed upload for large files (uses gzip to reduce size)
      */
     async streamingUpload(projectName, jsonContent) {
-        const response = await fetch(`${this.apiBase}/api/projects/upload?filename=${encodeURIComponent(projectName)}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-vercel-filename': projectName
-            },
-            body: jsonContent
+        console.log(`[StorageManager] Compressing data...`);
+
+        // Convert string to bytes
+        const encoder = new TextEncoder();
+        const inputBytes = encoder.encode(jsonContent);
+
+        // Compress using gzip
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(inputBytes);
+                controller.close();
+            }
         });
 
-        console.log(`[StorageManager] Streaming upload response status: ${response.status}`);
+        const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+        const compressedResponse = await new Response(compressedStream);
+        const compressedBlob = await compressedResponse.blob();
+
+        console.log(`[StorageManager] Compressed: ${(inputBytes.length / 1024 / 1024).toFixed(2)} MB → ${(compressedBlob.size / 1024 / 1024).toFixed(2)} MB`);
+
+        // Check if compressed size is still too large
+        if (compressedBlob.size > 4 * 1024 * 1024) {
+            throw new Error(`File quá lớn (${(compressedBlob.size / 1024 / 1024).toFixed(1)} MB sau khi nén). Giới hạn 4MB.`);
+        }
+
+        // Send compressed data
+        const response = await fetch(`${this.apiBase}/api/projects/upload-compressed?filename=${encodeURIComponent(projectName)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/gzip',
+                'X-Original-Size': inputBytes.length.toString()
+            },
+            body: compressedBlob
+        });
+
+        console.log(`[StorageManager] Compressed upload response status: ${response.status}`);
 
         if (!response.ok) {
             const text = await response.text();
