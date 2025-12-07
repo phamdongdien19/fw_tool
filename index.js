@@ -2581,18 +2581,13 @@ async function handleProjectFileImport(event) {
             // Refresh project detail to show data info
             renderProjectDetail(selectedProjectId);
 
-            // Save to server FIRST - await this before showing success
-            try {
-                const saveResult = await StorageManager.saveProject(project.name);
-                if (saveResult.success) {
-                    UIRenderer.showToast(`Đã import và lưu ${file.name} cho project "${project.name}"`, 'success');
-                } else {
-                    UIRenderer.showToast(`Đã import nhưng lưu server thất bại: ${saveResult.error || 'Unknown error'}`, 'warning');
-                }
-            } catch (saveErr) {
-                console.error('Server save error:', saveErr);
-                UIRenderer.showToast(`Đã import nhưng không lưu được lên server: ${saveErr.message}`, 'warning');
+            // Save to server - StorageManager handles error display
+            const saveResult = await StorageManager.saveProject(project.name);
+            if (saveResult.success) {
+                // StorageManager already showed success toast
+                console.log('Project data saved to server');
             }
+            // Note: StorageManager already shows error toast if save fails
         } else {
             throw new Error(result.error || 'Import failed');
         }

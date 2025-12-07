@@ -3,7 +3,7 @@ import { put, list, del, head } from '@vercel/blob';
 export const config = {
     api: {
         bodyParser: {
-            sizeLimit: '10mb',
+            sizeLimit: '50mb',
         },
     },
 };
@@ -26,7 +26,10 @@ export default async function handler(req, res) {
         const { projectName, data, headers, metadata } = req.body;
 
         if (!projectName) {
-            return res.status(400).json({ error: 'Project name is required' });
+            return res.status(400).json({
+                success: false,
+                error: 'Project name is required'
+            });
         }
 
         // Create project data object
@@ -44,6 +47,7 @@ export default async function handler(req, res) {
 
         // Convert to JSON string
         const jsonContent = JSON.stringify(projectData);
+        console.log(`Saving project "${projectName}" - size: ${jsonContent.length} bytes, rows: ${projectData.metadata.rowCount}`);
 
         // Create blob filename
         const blobPath = `projects/${projectName}.json`;
@@ -66,7 +70,8 @@ export default async function handler(req, res) {
     } catch (error) {
         console.error('Save error:', error);
         return res.status(500).json({
-            error: 'Failed to save project',
+            success: false,
+            error: `Failed to save project: ${error.message}`,
             details: error.message
         });
     }
