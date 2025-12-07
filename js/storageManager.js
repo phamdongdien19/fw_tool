@@ -45,23 +45,34 @@ const StorageManager = {
         this.updateSaveIndicator('saving');
 
         try {
+            const headers = DataManager.getHeaders();
+            const data = DataManager.getData();
+            console.log(`[StorageManager] Saving project "${name}" - ${data.length} rows, ${headers.length} columns`);
+
+            const requestBody = {
+                projectName: name,
+                headers: headers,
+                data: data,
+                metadata: {
+                    fileInfo: DataManager.getFileInfo(),
+                    config: ConfigManager.getAll()
+                }
+            };
+
+            const bodySize = JSON.stringify(requestBody).length;
+            console.log(`[StorageManager] Request body size: ${(bodySize / 1024 / 1024).toFixed(2)} MB`);
+
             const response = await fetch(`${this.apiBase}/api/projects/save`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    projectName: name,
-                    headers: DataManager.getHeaders(),
-                    data: DataManager.getData(),
-                    metadata: {
-                        fileInfo: DataManager.getFileInfo(),
-                        config: ConfigManager.getAll()
-                    }
-                })
+                body: JSON.stringify(requestBody)
             });
 
+            console.log(`[StorageManager] Response status: ${response.status}`);
             const result = await response.json();
+            console.log(`[StorageManager] Response:`, result);
 
             if (result.success) {
                 this.currentProject = name;
@@ -80,12 +91,12 @@ const StorageManager = {
             }
 
         } catch (error) {
-            console.error('Save error:', error);
+            console.error('[StorageManager] Save error:', error);
             this.updateSaveIndicator('error');
 
             // Fallback to localStorage
             this.saveToLocalStorage(name);
-            UIRenderer.showToast(`Lỗi save server. Đã lưu local backup.`, 'warning');
+            UIRenderer.showToast(`Lỗi save server: ${error.message}. Đã lưu local.`, 'warning');
 
             return { success: false, message: error.message };
         } finally {
