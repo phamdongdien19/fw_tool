@@ -101,6 +101,9 @@ const StorageManager = {
                 this.isDirty = false;
                 this.updateSaveIndicator('saved');
 
+                // Save as last project so we remember what was viewed for next time
+                this.saveLastProject(projectName);
+
                 // Update UI
                 UIRenderer.updateFileInfo();
                 UIRenderer.renderDataTable();
