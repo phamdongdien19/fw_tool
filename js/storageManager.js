@@ -31,6 +31,23 @@ const StorageManager = {
 
         // Auto-load last project if exists
         this.autoLoadLastProject();
+
+        // Setup unload warning
+        this.setupBeforeUnload();
+    },
+
+    /**
+     * Warn before closing if unsaved changes exist
+     */
+    setupBeforeUnload() {
+        window.addEventListener('beforeunload', (e) => {
+            if (this.isDirty) {
+                // Cancel the event
+                e.preventDefault();
+                // Chrome requires returnValue to be set
+                e.returnValue = '';
+            }
+        });
     },
 
     /**
