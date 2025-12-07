@@ -34,8 +34,9 @@ export default async function handler(req, res) {
         }
 
         // Fetch the blob content
-        const blobUrl = blobs[0].url;
-        const response = await fetch(blobUrl);
+        const url = new URL(blobs[0].url);
+        url.searchParams.set('t', Date.now());
+        const response = await fetch(url.toString(), { cache: 'no-store' });
 
         if (!response.ok) {
             throw new Error('Failed to fetch project data');

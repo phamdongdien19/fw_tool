@@ -43,7 +43,10 @@ export default async function handler(req, res) {
             try {
                 const { blobs } = await list({ prefix: `projects/${originalProjectName}.json` });
                 if (blobs.length > 0) {
-                    const response = await fetch(blobs[0].url);
+                    const url = new URL(blobs[0].url);
+                    url.searchParams.set('t', Date.now());
+                    const response = await fetch(url.toString(), { cache: 'no-store' });
+
                     if (response.ok) {
                         const oldProject = await response.json();
 
@@ -73,7 +76,10 @@ export default async function handler(req, res) {
 
                 if (blobs.length > 0) {
                     // Found existing project - fetch it for merging
-                    const response = await fetch(blobs[0].url);
+                    const url = new URL(blobs[0].url);
+                    url.searchParams.set('t', Date.now());
+                    const response = await fetch(url.toString(), { cache: 'no-store' });
+
                     if (response.ok) {
                         const existingProject = await response.json();
 

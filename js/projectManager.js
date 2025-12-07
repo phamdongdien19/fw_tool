@@ -79,7 +79,15 @@ const ProjectManager = {
 
                 try {
                     // Fetch the actual project JSON from blob
-                    const blobResponse = await fetch(meta.url);
+                    // Cache busting: Add timestamp and cache control
+                    const url = new URL(meta.url);
+                    url.searchParams.set('t', Date.now());
+
+                    const blobResponse = await fetch(url.toString(), {
+                        cache: 'no-store',
+                        headers: { 'Cache-Control': 'no-cache' }
+                    });
+
                     if (blobResponse.ok) {
                         const projectData = await blobResponse.json();
 
