@@ -371,24 +371,30 @@ const UIRenderer = {
         // Update SMS batch select
         const smsBatchSelect = document.getElementById('smsBatchSelect');
         const smsBatches = DataManager.getSmsBatches();
-        smsBatchSelect.innerHTML = '<option value="">-- Chọn batch --</option>' +
-            smsBatches.map(b => `<option value="${b}">Batch ${b}</option>`).join('');
+        if (smsBatchSelect) {
+            smsBatchSelect.innerHTML = '<option value="">-- Chọn batch --</option>' +
+                smsBatches.map(b => `<option value="${b}">Batch ${b}</option>`).join('');
+        }
 
         // Update Email batch select
         const emailBatchSelect = document.getElementById('emailBatchSelect');
         const emailBatches = DataManager.getEmailBatches();
-        emailBatchSelect.innerHTML = '<option value="">-- Chọn batch --</option>' +
-            emailBatches.map(b => `<option value="${b}">Batch ${b}</option>`).join('');
+        if (emailBatchSelect) {
+            emailBatchSelect.innerHTML = '<option value="">-- Chọn batch --</option>' +
+                emailBatches.map(b => `<option value="${b}">Batch ${b}</option>`).join('');
+        }
 
         // Update custom column selector
         const columnSelector = document.getElementById('customColumnSelector');
         const headers = DataManager.getHeaders();
-        columnSelector.innerHTML = headers.map(h => `
-            <label>
-                <input type="checkbox" value="${h}" checked>
-                ${this.escapeHtml(h)}
-            </label>
-        `).join('');
+        if (columnSelector) {
+            columnSelector.innerHTML = headers.map(h => `
+                <label>
+                    <input type="checkbox" value="${h}" checked>
+                    ${this.escapeHtml(h)}
+                </label>
+            `).join('');
+        }
 
         // Render export history
         this.renderExportHistory();
