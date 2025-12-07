@@ -474,6 +474,9 @@ function markBatch(type, limit) {
             updateDeleteBatchDropdown();
         }
 
+        // Update export batch dropdowns so user can see the new batch
+        UIRenderer.renderExportOptions();
+
         // Trigger auto-save
         if (typeof StorageManager !== 'undefined') {
             StorageManager.markDirty();
