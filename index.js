@@ -426,6 +426,29 @@ function markBatch(type, limit) {
 
     if (result.success) {
         UIRenderer.showToast(result.message, 'success');
+
+        // Auto-add relevant columns to visibleColumns so user can see the result
+        const config = ConfigManager.getAll();
+        if (type === 'sms') {
+            // Add Content_SMS and SMS_Batch columns to visible set
+            const contentCol = DataManager.findColumn(config.CONTENT_COL) || 'Content_SMS';
+            const batchCol = DataManager.findColumn(config.BATCH_COL) || 'SMS_Batch';
+            if (contentCol) visibleColumns.add(contentCol);
+            if (batchCol) visibleColumns.add(batchCol);
+        } else if (type === 'email') {
+            // Add Email_Batch column
+            const batchCol = DataManager.findColumn(config.EMAIL_BATCH_COL) || 'Email_Batch';
+            if (batchCol) visibleColumns.add(batchCol);
+        } else if (type === 'remind_sms') {
+            const batchCol = DataManager.findColumn(config.REMIND_SMS_BATCH_COL) || 'Remind_SMS_Batch';
+            if (batchCol) visibleColumns.add(batchCol);
+        } else if (type === 'remind_email') {
+            const batchCol = DataManager.findColumn(config.REMIND_EMAIL_BATCH_COL) || 'Remind_Email_Batch';
+            if (batchCol) visibleColumns.add(batchCol);
+        }
+
+        // Re-render column visibility checkboxes and data table
+        renderColumnVisibility();
         UIRenderer.renderDataTable();
         UIRenderer.renderDashboard();
         updateUndoRedoButtons();
@@ -447,7 +470,6 @@ function markBatch(type, limit) {
         }
 
         // Auto export if configured
-        const config = ConfigManager.getAll();
         if (config.EXPORT_AFTER_MARK) {
             if (type === 'sms') {
                 ExportManager.exportSmsBatch(result.newBatch);
