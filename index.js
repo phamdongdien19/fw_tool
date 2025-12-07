@@ -310,6 +310,15 @@ function confirmImport() {
     UIRenderer.updateFileInfo();
     UIRenderer.showToast(`Đã import ${DataManager.getRowCount()} dòng từ ${pendingFile.name}`, 'success');
 
+    // Auto-save logic
+    if (typeof StorageManager !== 'undefined') {
+        // If no project selected, use filename
+        if (!StorageManager.currentProject) {
+            StorageManager.currentProject = pendingFile.name.split('.')[0];
+        }
+        StorageManager.markDirty();
+    }
+
     // Switch to data view
     switchView('data');
 
@@ -740,6 +749,14 @@ async function importFromUrl() {
         });
 
         DataManager.setData(headers, data, result.filename || 'URL Import');
+
+        // Auto-save logic
+        if (typeof StorageManager !== 'undefined') {
+            if (!StorageManager.currentProject) {
+                StorageManager.currentProject = result.filename || 'URL Import';
+            }
+            StorageManager.markDirty();
+        }
 
         progressFill.style.width = '100%';
         progressText.textContent = 'Hoàn thành!';
@@ -2168,7 +2185,7 @@ function renderProjectQuotas(project) {
         return;
     }
 
-    quotaList.innerHTML = project.quotas.map(q => {
+    const renderItem = (q) => {
         const percent = q.limit > 0 ? Math.round((q.count / q.limit) * 100) : 0;
         let progressClass = 'low';
         if (percent >= 100) progressClass = 'complete';
@@ -2186,7 +2203,30 @@ function renderProjectQuotas(project) {
                 </div>
             </div>
         `;
-    }).join('');
+    };
+
+    const MAX_VISIBLE = 5;
+    const items = project.quotas;
+    const visibleItems = items.slice(0, MAX_VISIBLE);
+    const hiddenItems = items.slice(MAX_VISIBLE);
+    const hasHidden = hiddenItems.length > 0;
+
+    let html = visibleItems.map(renderItem).join('');
+
+    if (hasHidden) {
+        html += `
+            <div id="quotaDetailsProjects" class="collapsed">
+                ${hiddenItems.map(renderItem).join('')}
+            </div>
+            <div class="quota-action-row" style="text-align: center; margin-top: 8px;">
+                <button class="btn btn-sm btn-link" id="quotaExpandBtnProjects" onclick="toggleQuotaDetails('projects')" style="text-decoration: none; color: var(--primary-color);">
+                    ▼ Xem thêm (${hiddenItems.length})
+                </button>
+            </div>
+        `;
+    }
+
+    quotaList.innerHTML = html;
 
     // Summary
     const totalCompleted = project.quotas.reduce((s, q) => s + q.count, 0);
@@ -2404,10 +2444,22 @@ function toggleQuotaDetails(location) {
     if (details && btn) {
         if (details.classList.contains('collapsed')) {
             details.classList.remove('collapsed');
-            btn.textContent = '▼';
+
+            if (location === 'infoPanel') {
+                btn.textContent = '▼';
+            } else {
+                btn.textContent = '▲ Thu gọn';
+            }
         } else {
             details.classList.add('collapsed');
-            btn.textContent = '▶';
+
+            if (location === 'infoPanel') {
+                btn.textContent = '▶';
+            } else {
+                // Determine count if possible, or just "Xem thêm"
+                const count = details.children.length;
+                btn.textContent = `▼ Xem thêm (${count})`;
+            }
         }
     }
 }

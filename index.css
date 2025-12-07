@@ -3189,3 +3189,7 @@ textarea.form-control {
     top: 8px;
     right: 8px;
 }
+
+#quotaDetailsProjects.collapsed {
+    display: none;
+}
