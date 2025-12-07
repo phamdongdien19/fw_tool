@@ -464,7 +464,7 @@ function markBatch(type, limit) {
         }
 
         // Re-render column visibility checkboxes and data table
-        renderColumnVisibility();
+        renderColumnVisibilityList();
         UIRenderer.renderDataTable();
         UIRenderer.renderDashboard();
         updateUndoRedoButtons();
