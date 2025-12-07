@@ -2564,30 +2564,35 @@ async function handleProjectFileImport(event) {
         const result = await DataManager.importFile(file);
 
         if (result.success) {
-            // Update project data info display
-            updateProjectDataInfo(project.id, {
-                fileName: file.name,
-                rowCount: result.rows || DataManager.getData().length,
-                importedAt: new Date().toISOString()
-            });
-
-            // Also set this as active project
+            // Set as active project first
             ProjectManager.setActiveProject(selectedProjectId);
             StorageManager.currentProject = project.name;
 
-            // Render the data table
+            // Render the data table immediately
             UIRenderer.renderDataTable();
+
+            // Save data to server
+            const saveResult = await StorageManager.saveProject(project.name);
+
+            // Update project dataInfo locally (don't save to server again, just update local cache)
+            const dataInfo = {
+                fileName: file.name,
+                rowCount: result.rows || DataManager.getData().length,
+                importedAt: new Date().toISOString()
+            };
+
+            // Update local project cache with dataInfo
+            const projectInCache = ProjectManager.getProject(project.id);
+            if (projectInCache) {
+                projectInCache.dataInfo = dataInfo;
+            }
 
             // Refresh project detail to show data info
             renderProjectDetail(selectedProjectId);
 
-            // Save to server - StorageManager handles error display
-            const saveResult = await StorageManager.saveProject(project.name);
             if (saveResult.success) {
-                // StorageManager already showed success toast
                 console.log('Project data saved to server');
             }
-            // Note: StorageManager already shows error toast if save fails
         } else {
             throw new Error(result.error || 'Import failed');
         }
@@ -2604,10 +2609,8 @@ function updateProjectDataInfo(projectId, dataInfo) {
     const project = ProjectManager.getProject(projectId);
     if (!project) return;
 
-    // Update project with data info
-    ProjectManager.updateProject(projectId, {
-        dataInfo: dataInfo
-    });
+    // Directly update local cache (don't trigger server save)
+    project.dataInfo = dataInfo;
 
     // Update UI
     const infoContainer = document.getElementById('projectDataInfo');
