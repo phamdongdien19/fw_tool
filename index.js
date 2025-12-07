@@ -1194,7 +1194,21 @@ function changeRowsPerPage(value) {
 // ===== Column Visibility =====
 function initColumnVisibility() {
     const headers = DataManager.getHeaders();
-    visibleColumns = new Set(headers); // All visible by default
+
+    // Default columns requested by user
+    const defaultCols = ['mobile', 'year', 'gender', 'fincome', 'province', 'Content_SMS', 'SMS_Batch'];
+
+    // Check if any of the default columns exist in the headers
+    const hasDefaultCols = defaultCols.some(col => headers.includes(col));
+
+    if (hasDefaultCols) {
+        // If yes, only show those that exist
+        visibleColumns = new Set(defaultCols.filter(col => headers.includes(col)));
+    } else {
+        // Otherwise show all
+        visibleColumns = new Set(headers);
+    }
+
     renderColumnVisibilityList();
 }
 
