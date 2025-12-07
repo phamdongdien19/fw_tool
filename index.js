@@ -144,6 +144,22 @@ function switchView(viewName) {
             renderProjectsList();
             break;
         case 'data':
+            // Apply default filter (SMS chưa gửi) if no filters are active and data exists
+            if (!FilterEngine.hasActiveFilters() && DataManager.getData().length > 0) {
+                // Find SMS_Batch column
+                const config = ConfigManager.getAll();
+                const batchCol = DataManager.findColumn(config.BATCH_COL) || 'SMS_Batch';
+
+                // Add default filter: SMS_Batch is empty
+                FilterEngine.addCondition({
+                    id: Date.now(),
+                    column: batchCol,
+                    operator: 'isEmpty',
+                    value: '',
+                    active: true
+                });
+                FilterEngine.invalidateCache();
+            }
             UIRenderer.renderDataTable();
             UIRenderer.renderFilterConditions();
             renderProjectInfoPanel();
