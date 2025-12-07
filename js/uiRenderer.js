@@ -101,7 +101,7 @@ const UIRenderer = {
                     cellClass = 'cell-batch email';
                 }
 
-                return `<td><span class="${cellClass}">${this.escapeHtml(String(displayValue))}</span></td>`;
+                return `<td title="${this.escapeHtml(String(displayValue))}"><span class="${cellClass}">${this.escapeHtml(String(displayValue))}</span></td>`;
             }).join('')}
                 </tr>
             `;

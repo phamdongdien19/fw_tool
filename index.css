@@ -931,9 +931,6 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
-background: var(--bg-hover);
-}
-
 .data-table tbody tr.selected {
     background: rgba(99, 102, 241, 0.15);
 }
@@ -3149,4 +3146,152 @@ textarea.form-control {
 
 #quotaDetailsProjects.collapsed {
     display: none;
+}
+
+/* ===== Data Table Enhanced Styles ===== */
+
+/* Table Container */
+.data-table-container {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+}
+
+/* Data Table */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+/* Table Header */
+.data-table thead th {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 2px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table thead th:last-child {
+    border-right: none;
+}
+
+/* Table Body */
+.data-table tbody td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: middle;
+
+    /* Ellipsis for long text */
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.data-table tbody td:last-child {
+    border-right: none;
+}
+
+/* Hover effect on rows */
+.data-table tbody tr:hover {
+    background: var(--bg-hover);
+}
+
+/* Alternating row colors (zebra stripes) */
+.data-table tbody tr:nth-child(even) {
+    background: var(--bg-secondary);
+}
+
+.data-table tbody tr:nth-child(even):hover {
+    background: var(--bg-hover);
+}
+
+/* Selected row */
+.data-table tbody tr.selected {
+    background: rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Compact table variant */
+.data-table.compact tbody td {
+    padding: 6px 8px;
+    max-width: 150px;
+}
+
+.data-table.compact thead th {
+    padding: 8px;
+    font-size: 11px;
+}
+
+/* Cell with tooltip indicator */
+.data-table tbody td.has-tooltip {
+    cursor: help;
+}
+
+/* Custom tooltip for truncated cells */
+.data-table tbody td[title]:hover {
+    position: relative;
+}
+
+/* Batch cell styling (override ellipsis) */
+.data-table tbody td .cell-batch {
+    display: inline-flex;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+/* Row index/number column */
+.data-table tbody td:first-child,
+.data-table thead th:first-child {
+    width: 50px;
+    min-width: 50px;
+    text-align: center;
+    color: var(--text-tertiary);
+}
+
+/* Checkbox column */
+.data-table td.checkbox-cell,
+.data-table th.checkbox-cell {
+    width: 40px;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Action buttons in table */
+.data-table .row-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+/* Empty table state */
+.data-table tbody tr.empty-row td {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+/* Responsive table */
+@media screen and (max-width: 768px) {
+    .data-table tbody td {
+        max-width: 120px;
+    }
+
+    .data-table.compact tbody td {
+        max-width: 100px;
+    }
 }
