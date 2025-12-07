@@ -47,6 +47,7 @@ const ProjectManager = {
 
     /**
      * Sync projects from server (background)
+     * Uses list metadata directly - full data is loaded on-demand
      */
     async syncFromServer() {
         try {
@@ -63,44 +64,32 @@ const ProjectManager = {
             // Server returns { success, projects: [{name, url, size, uploadedAt}], count }
             const serverProjectMeta = result.projects || [];
 
-            // Convert server metadata to project objects
-            // For each project in server, fetch full data if not in local cache
-            const serverProjects = [];
-            for (const meta of serverProjectMeta) {
-                // Check if we have this project locally with same or newer data
+            console.log('syncFromServer: Server returned', serverProjectMeta.length, 'projects');
+
+            // Convert server metadata to project objects directly (without fetching full data)
+            // Full data will be loaded on-demand when user selects a project
+            const serverProjects = serverProjectMeta.map(meta => {
+                // Check if we have this project locally with more data
                 const localProject = this.projects.find(p => p.name === meta.name);
                 if (localProject) {
-                    serverProjects.push(localProject);
-                } else {
-                    // Fetch full project data
-                    try {
-                        const loadResp = await fetch(`${this.API_LOAD}?name=${encodeURIComponent(meta.name)}`);
-                        const loadResult = await loadResp.json();
-                        if (loadResult.success && loadResult.project) {
-                            // Server returns: {projectName, headers, data, metadata}
-                            // Map to client format: {id, name, surveyId, headers, data, ...}
-                            const serverData = loadResult.project;
-                            const proj = {
-                                id: serverData.metadata?.id || 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                                name: serverData.projectName,
-                                headers: serverData.headers || [],
-                                data: serverData.data || [],
-                                surveyId: serverData.metadata?.surveyId || '',
-                                criteria: serverData.metadata?.criteria || '',
-                                target: serverData.metadata?.target || 0,
-                                notes: serverData.metadata?.notes || '',
-                                quotas: serverData.metadata?.quotas || [],
-                                lastQuotaFetch: serverData.metadata?.lastQuotaFetch || null,
-                                createdAt: serverData.metadata?.createdAt || new Date().toISOString(),
-                                updatedAt: serverData.metadata?.updatedAt || serverData.metadata?.savedAt || new Date().toISOString()
-                            };
-                            serverProjects.push(proj);
-                        }
-                    } catch (e) {
-                        console.warn(`Failed to load project ${meta.name}:`, e);
-                    }
+                    return localProject; // Use local cache which may have more data
                 }
-            }
+                // Create minimal project object from metadata
+                return {
+                    id: 'proj_' + meta.name.replace(/[^a-zA-Z0-9]/g, '_') + '_' + meta.uploadedAt.slice(0, 10),
+                    name: meta.name,
+                    blobUrl: meta.url, // Store blob URL for later fetching
+                    surveyId: '',
+                    criteria: '',
+                    target: 0,
+                    notes: '',
+                    quotas: [],
+                    lastQuotaFetch: null,
+                    createdAt: meta.uploadedAt,
+                    updatedAt: meta.uploadedAt,
+                    _serverMeta: meta // Store metadata for reference
+                };
+            });
 
             // Merge server data with local (prefer server, add local-only)
             const merged = [...serverProjects];
