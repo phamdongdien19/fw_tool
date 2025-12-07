@@ -83,10 +83,7 @@ const ProjectManager = {
                     const url = new URL(meta.url);
                     url.searchParams.set('t', Date.now());
 
-                    const blobResponse = await fetch(url.toString(), {
-                        cache: 'no-store',
-                        headers: { 'Cache-Control': 'no-cache' }
-                    });
+                    const blobResponse = await fetch(url.toString());
 
                     if (blobResponse.ok) {
                         const projectData = await blobResponse.json();
