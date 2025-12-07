@@ -28,6 +28,39 @@ const StorageManager = {
 
         console.log('StorageManager initialized');
         this.loadProjectList();
+
+        // Auto-load last project if exists
+        this.autoLoadLastProject();
+    },
+
+    /**
+     * Auto-load the last used project on page refresh
+     */
+    async autoLoadLastProject() {
+        const lastProject = localStorage.getItem('fw_tools_last_project');
+        if (lastProject) {
+            console.log(`[StorageManager] Auto-loading last project: ${lastProject}`);
+            // Delay slightly to ensure UI is ready
+            setTimeout(async () => {
+                const result = await this.loadProject(lastProject);
+                if (result.success) {
+                    // Update the project dropdown selection
+                    const projectSelect = document.getElementById('projectSelect');
+                    if (projectSelect) {
+                        projectSelect.value = lastProject;
+                    }
+                }
+            }, 500);
+        }
+    },
+
+    /**
+     * Save last project name to localStorage
+     */
+    saveLastProject(projectName) {
+        if (projectName) {
+            localStorage.setItem('fw_tools_last_project', projectName);
+        }
     },
 
     /**
@@ -93,6 +126,9 @@ const StorageManager = {
                 this.currentProject = name;
                 this.isDirty = false;
                 this.updateSaveIndicator('saved');
+
+                // Save as last project for auto-load on refresh
+                this.saveLastProject(name);
 
                 // Sync with ProjectManager - create entry if not exists
                 await this.syncProjectToManager(name, result.url);
