@@ -241,8 +241,7 @@ const StorageManager = {
                 if (cached && cached.isCached && cached.data && cached.data.length > 0) {
                     console.log('[StorageManager] Fast loading from cache:', projectName);
 
-                    DataManager.setHeaders(cached.headers || []);
-                    DataManager.setData(cached.data || [], projectName);
+                    DataManager.setData(cached.headers || [], cached.data || [], projectName);
 
                     // Restore config
                     if (cached.config) {
