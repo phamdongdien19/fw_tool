@@ -2527,31 +2527,38 @@ async function deleteProjectFromList(projectId) {
         return;
     }
 
-    if (!confirm(`Xóa project "${project.name}"?\nHành động này không thể hoàn tác.`)) {
-        return;
-    }
+    // Use custom modal instead of browser's confirm() which can be blocked
+    openModal(
+        'Xác nhận xóa Project',
+        `<p>Bạn có chắc chắn muốn xóa project <strong>"${project.name}"</strong>?</p>
+         <p style="color: var(--danger-color); font-size: 0.9em;">⚠️ Hành động này không thể hoàn tác.</p>`,
+        async () => {
+            closeModal();
+            UIRenderer.showToast('Đang xóa project...', 'info');
 
-    try {
-        await ProjectManager.deleteProject(projectId);
+            try {
+                await ProjectManager.deleteProject(projectId);
 
-        // If this was the selected project, clear selection
-        if (selectedProjectId === projectId) {
-            selectedProjectId = null;
-            renderProjectDetail(null);
+                // If this was the selected project, clear selection
+                if (selectedProjectId === projectId) {
+                    selectedProjectId = null;
+                    renderProjectDetail(null);
+                }
+
+                renderProjectsList();
+                UIRenderer.showToast(`Đã xóa project: ${project.name}`, 'success');
+                addNotification(`Xóa project: ${project.name}`, '🗑️');
+
+                // Also refresh the StorageManager project list
+                if (typeof StorageManager !== 'undefined' && StorageManager.loadProjectList) {
+                    StorageManager.loadProjectList();
+                }
+            } catch (error) {
+                console.error('Delete project failed:', error);
+                UIRenderer.showToast(`Lỗi xóa project: ${error.message}`, 'error');
+            }
         }
-
-        renderProjectsList();
-        UIRenderer.showToast(`Đã xóa project: ${project.name}`, 'success');
-        addNotification(`Xóa project: ${project.name}`, '🗑️');
-
-        // Also refresh the StorageManager project list
-        if (typeof StorageManager !== 'undefined' && StorageManager.loadProjectList) {
-            StorageManager.loadProjectList();
-        }
-    } catch (error) {
-        console.error('Delete project failed:', error);
-        UIRenderer.showToast(`Lỗi xóa project: ${error.message}`, 'error');
-    }
+    );
 }
 
 // Make project functions global
