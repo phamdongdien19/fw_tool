@@ -2111,6 +2111,12 @@ async function renderProjectsList() {
                     </div>
                 </div>
                 <div class="project-item-actions">
+                    <button class="btn btn-xs btn-outline" 
+                            onclick="event.stopPropagation(); loadProjectData('${safeId}')" 
+                            title="Load Data">📂</button>
+                    <button class="btn btn-xs btn-outline btn-danger" 
+                            onclick="event.stopPropagation(); deleteProjectFromList('${safeId}')" 
+                            title="Delete">🗑️</button>
                     <span class="project-star ${isStarred ? 'starred' : ''}" 
                           onclick="event.stopPropagation(); toggleStarProject('${safeName}')"
                           title="${isStarred ? 'Bỏ sao' : 'Gắn sao'}">${isStarred ? '⭐' : '☆'}</span>
@@ -2514,11 +2520,46 @@ function toggleProjectInfoPanel() {
     }
 }
 
+async function deleteProjectFromList(projectId) {
+    const project = ProjectManager.getProject(projectId);
+    if (!project) {
+        UIRenderer.showToast('Project không tồn tại', 'error');
+        return;
+    }
+
+    if (!confirm(`Xóa project "${project.name}"?\nHành động này không thể hoàn tác.`)) {
+        return;
+    }
+
+    try {
+        await ProjectManager.deleteProject(projectId);
+
+        // If this was the selected project, clear selection
+        if (selectedProjectId === projectId) {
+            selectedProjectId = null;
+            renderProjectDetail(null);
+        }
+
+        renderProjectsList();
+        UIRenderer.showToast(`Đã xóa project: ${project.name}`, 'success');
+        addNotification(`Xóa project: ${project.name}`, '🗑️');
+
+        // Also refresh the StorageManager project list
+        if (typeof StorageManager !== 'undefined' && StorageManager.loadProjectList) {
+            StorageManager.loadProjectList();
+        }
+    } catch (error) {
+        console.error('Delete project failed:', error);
+        UIRenderer.showToast(`Lỗi xóa project: ${error.message}`, 'error');
+    }
+}
+
 // Make project functions global
 window.openProjectModal = openProjectModal;
 window.selectProject = selectProject;
 window.editCurrentProject = editCurrentProject;
 window.deleteCurrentProjectMgmt = deleteCurrentProjectMgmt;
+window.deleteProjectFromList = deleteProjectFromList;
 window.refreshProjectQuotas = refreshProjectQuotas;
 window.setAsActiveProject = setAsActiveProject;
 window.renderProjectsList = renderProjectsList;
