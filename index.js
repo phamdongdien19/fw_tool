@@ -19,6 +19,9 @@ let paginationState = {
 let visibleColumns = new Set(); // All visible by default
 let columnVisibilityInitialized = false; // Track if user has modified
 
+// ===== Starred Projects Key (declared early for use by renderProjectsList) =====
+const STARRED_PROJECTS_KEY = 'fw_tools_starred_projects';
+
 // ===== Initialization =====
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize modules
@@ -1851,7 +1854,7 @@ window.toggleUrlColumn = toggleUrlColumn;
 window.toggleUrlAllColumns = toggleUrlAllColumns;
 
 // ===== Starred Projects =====
-const STARRED_PROJECTS_KEY = 'fw_tools_starred_projects';
+// STARRED_PROJECTS_KEY is declared at top of file
 
 function getStarredProjects() {
     return JSON.parse(localStorage.getItem(STARRED_PROJECTS_KEY) || '[]');
