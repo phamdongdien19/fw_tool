@@ -297,6 +297,13 @@ const DataManager = {
     },
 
     /**
+     * Set headers
+     */
+    setHeaders(headers) {
+        this.headers = headers || [];
+    },
+
+    /**
      * Set data from external source (e.g., server)
      * @param {Array} headers - Column headers
      * @param {Array} data - Row data
