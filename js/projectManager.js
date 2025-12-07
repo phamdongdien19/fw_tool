@@ -1,12 +1,15 @@
 /**
  * Project Manager - FW Tools
  * Manages project data, criteria, and Alchemer quota integration
- * Uses server-side storage via Vercel Blob
+ * Uses server-side storage via Vercel Blob (file-per-project)
  */
 
 const ProjectManager = {
-    // API endpoint
-    API_URL: '/api/project-manager',
+    // API endpoints (file-per-project storage)
+    API_LIST: '/api/projects/list',
+    API_SAVE: '/api/projects/save',
+    API_LOAD: '/api/projects/load',
+    API_DELETE: '/api/projects/delete',
 
     // Current active project
     activeProjectId: null,
@@ -53,19 +56,57 @@ const ProjectManager = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-            const response = await fetch(this.API_URL, { signal: controller.signal });
+            const response = await fetch(this.API_LIST, { signal: controller.signal });
             clearTimeout(timeoutId);
 
             const result = await response.json();
-            const serverProjects = result.projects || [];
+            // Server returns { success, projects: [{name, url, size, uploadedAt}], count }
+            const serverProjectMeta = result.projects || [];
 
-            // Merge server data with local
-            const localProjects = this.projects || [];
+            // Convert server metadata to project objects
+            // For each project in server, fetch full data if not in local cache
+            const serverProjects = [];
+            for (const meta of serverProjectMeta) {
+                // Check if we have this project locally with same or newer data
+                const localProject = this.projects.find(p => p.name === meta.name);
+                if (localProject) {
+                    serverProjects.push(localProject);
+                } else {
+                    // Fetch full project data
+                    try {
+                        const loadResp = await fetch(`${this.API_LOAD}?name=${encodeURIComponent(meta.name)}`);
+                        const loadResult = await loadResp.json();
+                        if (loadResult.success && loadResult.project) {
+                            // Server returns: {projectName, headers, data, metadata}
+                            // Map to client format: {id, name, surveyId, headers, data, ...}
+                            const serverData = loadResult.project;
+                            const proj = {
+                                id: serverData.metadata?.id || 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                                name: serverData.projectName,
+                                headers: serverData.headers || [],
+                                data: serverData.data || [],
+                                surveyId: serverData.metadata?.surveyId || '',
+                                criteria: serverData.metadata?.criteria || '',
+                                target: serverData.metadata?.target || 0,
+                                notes: serverData.metadata?.notes || '',
+                                quotas: serverData.metadata?.quotas || [],
+                                lastQuotaFetch: serverData.metadata?.lastQuotaFetch || null,
+                                createdAt: serverData.metadata?.createdAt || new Date().toISOString(),
+                                updatedAt: serverData.metadata?.updatedAt || serverData.metadata?.savedAt || new Date().toISOString()
+                            };
+                            serverProjects.push(proj);
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to load project ${meta.name}:`, e);
+                    }
+                }
+            }
+
+            // Merge server data with local (prefer server, add local-only)
             const merged = [...serverProjects];
-
-            // Add any local-only projects
+            const localProjects = this.projects || [];
             localProjects.forEach(localP => {
-                if (!merged.find(p => p.id === localP.id)) {
+                if (!merged.find(p => p.name === localP.name || p.id === localP.id)) {
                     merged.push(localP);
                 }
             });
@@ -105,14 +146,29 @@ const ProjectManager = {
     },
 
     /**
-     * Save project to server
+     * Save project to server (file-per-project)
      */
     async saveProjectToServer(project) {
         try {
-            const response = await fetch(this.API_URL, {
+            const response = await fetch(this.API_SAVE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ project })
+                body: JSON.stringify({
+                    projectName: project.name,
+                    data: project.data || [],
+                    headers: project.headers || [],
+                    metadata: {
+                        id: project.id,
+                        surveyId: project.surveyId,
+                        criteria: project.criteria,
+                        target: project.target,
+                        notes: project.notes,
+                        quotas: project.quotas,
+                        lastQuotaFetch: project.lastQuotaFetch,
+                        createdAt: project.createdAt,
+                        updatedAt: project.updatedAt
+                    }
+                })
             });
             const result = await response.json();
             if (!result.success) {
@@ -128,34 +184,22 @@ const ProjectManager = {
     },
 
     /**
-     * Update project on server
+     * Update project on server (same as save for file-per-project)
      */
     async updateProjectOnServer(id, updates) {
-        try {
-            const response = await fetch(this.API_URL, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, updates })
-            });
-            const result = await response.json();
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to update');
-            }
-            return result;
-        } catch (e) {
-            console.error('Failed to update project on server:', e);
-            // Fallback: save to localStorage
-            localStorage.setItem('fw_tools_projects', JSON.stringify(this.projects));
-            throw e;
+        const project = this.getProject(id);
+        if (!project) {
+            throw new Error('Project not found');
         }
+        return this.saveProjectToServer({ ...project, ...updates });
     },
 
     /**
      * Delete project from server
      */
-    async deleteProjectFromServer(id) {
+    async deleteProjectFromServer(projectName) {
         try {
-            const response = await fetch(`${this.API_URL}?id=${id}`, {
+            const response = await fetch(`${this.API_DELETE}?name=${encodeURIComponent(projectName)}`, {
                 method: 'DELETE'
             });
             const result = await response.json();
@@ -240,16 +284,22 @@ const ProjectManager = {
         const index = this.projects.findIndex(p => p.id === id);
         if (index === -1) return false;
 
+        const project = this.projects[index];
+        const projectName = project.name;
+
         this.projects.splice(index, 1);
+        this.saveToLocalStorage();
 
         if (this.activeProjectId === id) {
             this.activeProjectId = null;
         }
 
-        // Delete from server (async)
-        this.deleteProjectFromServer(id).catch(e => {
-            console.error('Background delete failed:', e);
-        });
+        // Delete from server (async) - use project name
+        if (projectName) {
+            this.deleteProjectFromServer(projectName).catch(e => {
+                console.error('Background delete failed:', e);
+            });
+        }
 
         return true;
     },
