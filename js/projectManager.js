@@ -127,13 +127,33 @@ const ProjectManager = {
     },
 
     /**
-     * Save projects to localStorage
+     * Save projects to localStorage (best effort, non-blocking)
      */
     saveToLocalStorage() {
         try {
-            localStorage.setItem('fw_tools_projects', JSON.stringify(this.projects));
+            // Only store minimal project metadata (not full data) to avoid quota
+            const minimalProjects = this.projects.map(p => ({
+                id: p.id,
+                name: p.name,
+                surveyId: p.surveyId,
+                criteria: p.criteria,
+                target: p.target,
+                notes: p.notes,
+                quotas: p.quotas,
+                lastQuotaFetch: p.lastQuotaFetch,
+                createdAt: p.createdAt,
+                updatedAt: p.updatedAt
+                // Exclude: headers, data (large arrays)
+            }));
+            localStorage.setItem('fw_tools_projects', JSON.stringify(minimalProjects));
         } catch (e) {
-            console.error('Failed to save to localStorage:', e);
+            console.warn('localStorage save failed (quota exceeded?), continuing without local cache:', e.message);
+            // Try to clear old data to make room
+            try {
+                localStorage.removeItem('fw_tools_projects');
+            } catch (e2) {
+                // Ignore
+            }
         }
     },
 
@@ -246,6 +266,11 @@ const ProjectManager = {
         // Refresh the Filter & Batch dropdown
         if (typeof StorageManager !== 'undefined' && StorageManager.loadProjectList) {
             StorageManager.loadProjectList();
+        }
+
+        // Re-render UI immediately after adding to array
+        if (typeof renderProjectsList === 'function') {
+            renderProjectsList();
         }
 
         // Save to server (async, don't block)
