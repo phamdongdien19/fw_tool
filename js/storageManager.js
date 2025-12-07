@@ -49,36 +49,50 @@ const StorageManager = {
             const data = DataManager.getData();
             console.log(`[StorageManager] Saving project "${name}" - ${data.length} rows, ${headers.length} columns`);
 
-            const requestBody = {
+            // Build the project data object
+            const projectData = {
                 projectName: name,
                 headers: headers,
                 data: data,
                 metadata: {
                     fileInfo: DataManager.getFileInfo(),
-                    config: ConfigManager.getAll()
+                    config: ConfigManager.getAll(),
+                    savedAt: new Date().toISOString(),
+                    rowCount: data.length,
+                    columnCount: headers.length
                 }
             };
 
-            const bodySize = JSON.stringify(requestBody).length;
+            const jsonContent = JSON.stringify(projectData);
+            const bodySize = jsonContent.length;
             console.log(`[StorageManager] Request body size: ${(bodySize / 1024 / 1024).toFixed(2)} MB`);
 
-            const response = await fetch(`${this.apiBase}/api/projects/save`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody)
-            });
+            let result;
 
-            console.log(`[StorageManager] Response status: ${response.status}`);
-            const result = await response.json();
+            // Use streaming upload for files > 3MB to bypass Vercel's 4.5MB body limit
+            if (bodySize > 3 * 1024 * 1024) {
+                console.log(`[StorageManager] Using streaming upload for large file`);
+                result = await this.streamingUpload(name, jsonContent);
+            } else {
+                // Use normal POST for small files
+                const response = await fetch(`${this.apiBase}/api/projects/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: jsonContent
+                });
+
+                console.log(`[StorageManager] Response status: ${response.status}`);
+                result = await response.json();
+            }
+
             console.log(`[StorageManager] Response:`, result);
 
             if (result.success) {
                 this.currentProject = name;
                 this.isDirty = false;
                 this.updateSaveIndicator('saved');
-                this.saveToLocalStorage(name); // Backup to localStorage
 
                 // Sync with ProjectManager - create entry if not exists
                 await this.syncProjectToManager(name, result.url);
@@ -94,14 +108,34 @@ const StorageManager = {
             console.error('[StorageManager] Save error:', error);
             this.updateSaveIndicator('error');
 
-            // Fallback to localStorage
-            this.saveToLocalStorage(name);
-            UIRenderer.showToast(`Lỗi save server: ${error.message}. Đã lưu local.`, 'warning');
-
+            UIRenderer.showToast(`Lỗi save server: ${error.message}`, 'error');
             return { success: false, message: error.message };
         } finally {
             this.isSaving = false;
         }
+    },
+
+    /**
+     * Streaming upload for large files (bypasses 4.5MB body limit)
+     */
+    async streamingUpload(projectName, jsonContent) {
+        const response = await fetch(`${this.apiBase}/api/projects/upload?filename=${encodeURIComponent(projectName)}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-vercel-filename': projectName
+            },
+            body: jsonContent
+        });
+
+        console.log(`[StorageManager] Streaming upload response status: ${response.status}`);
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Upload failed: ${response.status} - ${text}`);
+        }
+
+        return await response.json();
     },
 
     /**
