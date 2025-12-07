@@ -69,14 +69,13 @@ const ProjectManager = {
             // Convert server metadata to project objects directly (without fetching full data)
             // Full data will be loaded on-demand when user selects a project
             const serverProjects = serverProjectMeta.map(meta => {
-                // Check if we have this project locally with more data
-                const localProject = this.projects.find(p => p.name === meta.name);
-                if (localProject) {
-                    return localProject; // Use local cache which may have more data
-                }
-                // Create minimal project object from metadata
+                // Create project object from metadata
+                // Sanitize name for ID generation
+                const safeName = (meta.name || 'unnamed').replace(/[^a-zA-Z0-9]/g, '_');
+                const dateStr = typeof meta.uploadedAt === 'string' ? meta.uploadedAt.slice(0, 10) : new Date().toISOString().slice(0, 10);
+
                 return {
-                    id: 'proj_' + meta.name.replace(/[^a-zA-Z0-9]/g, '_') + '_' + meta.uploadedAt.slice(0, 10),
+                    id: 'proj_' + safeName + '_' + dateStr,
                     name: meta.name,
                     blobUrl: meta.url, // Store blob URL for later fetching
                     surveyId: '',
@@ -85,25 +84,22 @@ const ProjectManager = {
                     notes: '',
                     quotas: [],
                     lastQuotaFetch: null,
-                    createdAt: meta.uploadedAt,
-                    updatedAt: meta.uploadedAt,
+                    createdAt: meta.uploadedAt || new Date().toISOString(),
+                    updatedAt: meta.uploadedAt || new Date().toISOString(),
                     _serverMeta: meta // Store metadata for reference
                 };
             });
 
-            // Merge server data with local (prefer server, add local-only)
-            const merged = [...serverProjects];
-            const localProjects = this.projects || [];
-            localProjects.forEach(localP => {
-                if (!merged.find(p => p.name === localP.name || p.id === localP.id)) {
-                    merged.push(localP);
-                }
-            });
+            // Replace local data with server data (don't merge with potentially corrupt local cache)
+            this.projects = serverProjects;
 
-            this.projects = merged;
+            // Clear and save to localStorage
+            try {
+                localStorage.removeItem('fw_tools_projects');
+            } catch (e) { /* ignore */ }
             this.saveToLocalStorage();
 
-            console.log('Server sync complete:', merged.length, 'projects');
+            console.log('Server sync complete:', this.projects.length, 'projects');
         } catch (e) {
             console.warn('Server sync failed (using local data):', e.message);
         } finally {
