@@ -1074,14 +1074,7 @@
                             <div class="template-library">
                                 <label>Saved Templates:</label>
                                 <div class="template-list" id="templateList">
-                                    <div class="template-item">
-                                        <span class="template-name">Default Template</span>
-                                        <div class="template-actions">
-                                            <button class="btn btn-sm btn-outline"
-                                                onclick="loadTemplate(0)">Load</button>
-                                            <button class="btn btn-sm btn-danger" onclick="deleteTemplate(0)">×</button>
-                                        </div>
-                                    </div>
+                                    <!-- Dynamic content populated by UIRenderer.renderTemplateLibrary() -->
                                 </div>
                                 <button class="btn btn-secondary" onclick="saveCurrentTemplate()">+ Save Current as
                                     Template</button>
@@ -1267,14 +1260,8 @@
                     </div>
                     <div class="template-library">
                         <label>Saved Templates:</label>
-                        <div class="template-list" id="templateList">
-                            <div class="template-item">
-                                <span class="template-name">Default Template</span>
-                                <div class="template-actions">
-                                    <button class="btn btn-sm btn-outline" onclick="loadTemplate(0)">Load</button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteTemplate(0)">×</button>
-                                </div>
-                            </div>
+                        <div class="template-list" id="templateList2">
+                            <!-- Dynamic content populated by UIRenderer.renderTemplateLibrary() -->
                         </div>
                         <button class="btn btn-secondary" onclick="saveCurrentTemplate()">+ Save Current as
                             Template</button>
