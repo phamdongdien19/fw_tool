@@ -3,17 +3,23 @@ import { gunzipSync } from 'zlib';
 
 export const config = {
     api: {
-        bodyParser: {
-            sizeLimit: '50mb',
-        },
+        bodyParser: false,
     },
+};
+
+const getRawBody = async (req) => {
+    const chunks = [];
+    for await (const chunk of req) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+    return Buffer.concat(chunks);
 };
 
 export default async function handler(req, res) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Content-Encoding');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -24,20 +30,32 @@ export default async function handler(req, res) {
     }
 
     try {
-        let reqBody = req.body;
+        // Read raw body
+        let reqBody = await getRawBody(req);
 
         // Handle gzip
         const contentEncoding = req.headers['content-encoding'] || '';
         const contentType = req.headers['content-type'] || '';
 
         if (contentEncoding.includes('gzip') || contentType.includes('application/octet-stream')) {
-            if (Buffer.isBuffer(reqBody)) {
+            try {
+                const decompressed = gunzipSync(reqBody);
+                reqBody = JSON.parse(decompressed.toString('utf-8'));
+            } catch (e) {
+                console.error('Decompression error', e);
+                // Try parsing as raw JSON if decompression fails (fallback)
                 try {
-                    const decompressed = gunzipSync(reqBody);
-                    reqBody = JSON.parse(decompressed.toString('utf-8'));
-                } catch (e) {
-                    console.error('Decompression error', e);
+                    reqBody = JSON.parse(reqBody.toString('utf-8'));
+                } catch (e2) {
+                    throw new Error('Invalid compression or JSON format');
                 }
+            }
+        } else {
+            // Standard JSON
+            try {
+                reqBody = JSON.parse(reqBody.toString('utf-8'));
+            } catch (e) {
+                // ignore
             }
         }
 
@@ -56,7 +74,6 @@ export default async function handler(req, res) {
         let originalProjectUrl = null;
 
         // 1. Check for Rename Migration (if originalProjectName provided)
-        const { originalProjectName } = req.body;
         if (originalProjectName && originalProjectName !== projectName) {
             try {
                 const { blobs } = await list({ prefix: `projects/${originalProjectName}.json` });
