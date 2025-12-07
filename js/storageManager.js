@@ -534,7 +534,15 @@ const StorageManager = {
                     savedAt: new Date().toISOString()
                 }
             };
-            localStorage.setItem(`fw_project_${projectName}`, JSON.stringify(projectData));
+            const jsonString = JSON.stringify(projectData);
+
+            // Skip local backup if too large (> 2MB) to avoid QuotaExceededError
+            if (jsonString.length > 2 * 1024 * 1024) {
+                console.warn(`[StorageManager] Project "${projectName}" too large for localStorage (${(jsonString.length / 1024 / 1024).toFixed(2)}MB). Skipped local backup.`);
+                return;
+            }
+
+            localStorage.setItem(`fw_project_${projectName}`, jsonString);
 
             // Update project list
             const list = this.getLocalProjects();
@@ -543,7 +551,8 @@ const StorageManager = {
                 localStorage.setItem('fw_project_list', JSON.stringify(list));
             }
         } catch (e) {
-            console.error('LocalStorage save error:', e);
+            // Warn only, don't error to avoid confusing the user (server save works)
+            console.warn('LocalStorage save warning:', e.message);
         }
     },
 

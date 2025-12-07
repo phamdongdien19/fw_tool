@@ -440,6 +440,12 @@ function markBatch(type, limit) {
             StorageManager.markDirty();
         }
 
+        // Refresh filters to show new values
+        if (typeof UIRenderer.renderFilterConditions === 'function') {
+            UIRenderer.renderFilterConditions();
+            // Also update any open multi-selects? No, renderFilterConditions handles values
+        }
+
         // Auto export if configured
         const config = ConfigManager.getAll();
         if (config.EXPORT_AFTER_MARK) {
