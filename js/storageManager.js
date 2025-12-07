@@ -86,7 +86,115 @@ const StorageManager = {
         }
     },
 
-    // ... (saveLastProject, saveProject, streamingUpload, syncProjectToManager - unchanged)
+    saveLastProject(projectName) {
+        if (projectName) {
+            localStorage.setItem('fw_tools_last_project', projectName);
+        }
+    },
+
+    async saveProject(projectNameInput = null) {
+        const projectName = projectNameInput || this.currentProject;
+        if (!projectName) {
+            UIRenderer.showToast('Chưa chọn project để lưu', 'warning');
+            return { success: false };
+        }
+
+        if (this.isSaving) return;
+        this.isSaving = true;
+        this.updateSaveIndicator('saving');
+
+        try {
+            console.log(`[StorageManager] Saving project: ${projectName}`);
+            const data = DataManager.getData();
+            const headers = DataManager.getHeaders();
+
+            // Basic metadata
+            const metadata = {
+                fileInfo: DataManager.getFileInfo(),
+                config: ConfigManager.getAll(),
+                savedAt: new Date().toISOString()
+            };
+
+            // Call API
+            const response = await fetch(`${this.apiBase}/api/projects/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectName,
+                    data,
+                    headers,
+                    metadata
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.isDirty = false;
+                this.updateSaveIndicator('saved');
+
+                // Sync to ProjectManager
+                if (result.url) {
+                    await this.syncProjectToManager(projectName, result.url);
+                }
+
+                // Local backup
+                this.saveToLocalStorage(projectName);
+
+                // Only show toast if manual save (not auto-save triggered usually, but here we can show)
+                // UIRenderer.showToast('Đã lưu project', 'success'); 
+                return { success: true, url: result.url };
+            } else {
+                throw new Error(result.error || 'Unknown error');
+            }
+
+        } catch (error) {
+            console.error('Save error:', error);
+            this.updateSaveIndicator('error');
+            UIRenderer.showToast(`Lỗi lưu project: ${error.message}`, 'error');
+            return { success: false, error: error.message };
+        } finally {
+            this.isSaving = false;
+        }
+    },
+
+    async syncProjectToManager(projectName, dataUrl) {
+        if (typeof ProjectManager === 'undefined') return;
+
+        // Check if project exists in ProjectManager
+        const existingProjects = ProjectManager.getAllProjects();
+        const existing = existingProjects.find(p => p.name === projectName);
+
+        if (existing) {
+            // Update local cache only (don't call updateProject which saves empty data)
+            existing.dataFileUrl = dataUrl;
+            existing.updatedAt = new Date().toISOString();
+            ProjectManager.saveToLocalStorage();
+        } else {
+            // Add to local cache only - DO NOT call createProject() or saveProjectToServer()
+            // because that would overwrite the blob we just saved with actual data
+            const newProject = {
+                id: ProjectManager.generateId(),
+                name: projectName,
+                surveyId: '',
+                criteria: '',
+                target: 0,
+                notes: 'Auto-created from data save',
+                dataFileUrl: dataUrl,
+                quotas: [],
+                lastQuotaFetch: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            ProjectManager.projects.unshift(newProject);
+            ProjectManager.saveToLocalStorage();
+
+            // Refresh the project dropdown
+            if (typeof renderProjectsList === 'function') {
+                renderProjectsList();
+            }
+        }
+    },
 
     /**
      * Load project from server
