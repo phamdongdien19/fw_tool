@@ -184,27 +184,34 @@ const ProjectManager = {
      */
     async saveProjectToServer(project) {
         try {
+            const body = {
+                projectName: project.name,
+                // If we don't have data/headers, flag this as a metadata update
+                isMetadataUpdate: (!project.data || project.data.length === 0),
+                data: project.data || [],
+                headers: project.headers || [],
+                metadata: {
+                    id: project.id,
+                    surveyId: project.surveyId,
+                    criteria: project.criteria,
+                    target: project.target,
+                    notes: project.notes,
+                    quotas: project.quotas,
+                    lastQuotaFetch: project.lastQuotaFetch,
+                    createdAt: project.createdAt,
+                    updatedAt: project.updatedAt
+                }
+            };
+
+            // Pass original name if renaming
+            if (project.originalProjectName) {
+                body.originalProjectName = project.originalProjectName;
+            }
+
             const response = await fetch(this.API_SAVE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    projectName: project.name,
-                    // If we don't have data/headers, flag this as a metadata update
-                    isMetadataUpdate: (!project.data || project.data.length === 0),
-                    data: project.data || [],
-                    headers: project.headers || [],
-                    metadata: {
-                        id: project.id,
-                        surveyId: project.surveyId,
-                        criteria: project.criteria,
-                        target: project.target,
-                        notes: project.notes,
-                        quotas: project.quotas,
-                        lastQuotaFetch: project.lastQuotaFetch,
-                        createdAt: project.createdAt,
-                        updatedAt: project.updatedAt
-                    }
-                })
+                body: JSON.stringify(body)
             });
             const result = await response.json();
             if (!result.success) {
@@ -227,7 +234,16 @@ const ProjectManager = {
         if (!project) {
             throw new Error('Project not found');
         }
-        return this.saveProjectToServer({ ...project, ...updates });
+
+        // Check for rename
+        const originalName = project.name;
+        const updatedProject = { ...project, ...updates };
+
+        if (updates.name && updates.name !== originalName) {
+            updatedProject.originalProjectName = originalName;
+        }
+
+        return this.saveProjectToServer(updatedProject);
     },
 
     /**

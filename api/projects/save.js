@@ -35,35 +35,65 @@ export default async function handler(req, res) {
         let finalData = reqData || [];
         let finalHeaders = reqHeaders || [];
         let preservedMetadata = {};
+        let originalProjectUrl = null;
 
-        // Check for existing project to merge metadata and potentially preserve data
-        try {
-            const { blobs } = await list({
-                prefix: `projects/${projectName}.json`,
-            });
+        // 1. Check for Rename Migration (if originalProjectName provided)
+        const { originalProjectName } = req.body;
+        if (originalProjectName && originalProjectName !== projectName) {
+            try {
+                const { blobs } = await list({ prefix: `projects/${originalProjectName}.json` });
+                if (blobs.length > 0) {
+                    const response = await fetch(blobs[0].url);
+                    if (response.ok) {
+                        const oldProject = await response.json();
 
-            if (blobs.length > 0) {
-                // Found existing project - fetch it for merging
-                const response = await fetch(blobs[0].url);
-                if (response.ok) {
-                    const existingProject = await response.json();
+                        // Migrate data from old project
+                        if (!finalData || finalData.length === 0) {
+                            finalData = oldProject.data || [];
+                            finalHeaders = oldProject.headers || [];
+                            console.log(`[save.js] Migrated ${finalData.length} rows from "${originalProjectName}" to "${projectName}"`);
+                        }
 
-                    // Capture existing metadata to prevent overwriting
-                    preservedMetadata = existingProject.metadata || {};
-
-                    // If this is a metadata-only update (e.g. from ProjectManager), preserve existing data
-                    if (isMetadataUpdate && (!finalData || finalData.length === 0)) {
-                        finalData = existingProject.data || [];
-                        finalHeaders = existingProject.headers || [];
-                        console.log(`[save.js] Preserved ${finalData.length} rows for metadata update of "${projectName}"`);
-                    } else {
-                        console.log(`[save.js] Check found existing project "${projectName}", merging metadata.`);
+                        // Use old metadata as base
+                        preservedMetadata = oldProject.metadata || {};
+                        originalProjectUrl = blobs[0].url;
                     }
                 }
+            } catch (err) {
+                console.warn('[save.js] Failed to fetch original project for migration:', err);
             }
-        } catch (err) {
-            console.warn('[save.js] Failed to fetch existing project for merge:', err);
-            // Continue with provided data/metadata if fetch fails
+        }
+
+        // 2. If NOT renaming (or migration failed), check for existing target project to merge
+        if (!originalProjectUrl) {
+            try {
+                const { blobs } = await list({
+                    prefix: `projects/${projectName}.json`,
+                });
+
+                if (blobs.length > 0) {
+                    // Found existing project - fetch it for merging
+                    const response = await fetch(blobs[0].url);
+                    if (response.ok) {
+                        const existingProject = await response.json();
+
+                        // Capture existing metadata to prevent overwriting
+                        preservedMetadata = existingProject.metadata || {};
+
+                        // If this is a metadata-only update (e.g. from ProjectManager), preserve existing data
+                        if (isMetadataUpdate && (!finalData || finalData.length === 0)) {
+                            finalData = existingProject.data || [];
+                            finalHeaders = existingProject.headers || [];
+                            console.log(`[save.js] Preserved ${finalData.length} rows for metadata update of "${projectName}"`);
+                        } else {
+                            console.log(`[save.js] Check found existing project "${projectName}", merging metadata.`);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('[save.js] Failed to fetch existing project for merge:', err);
+                // Continue with provided data/metadata if fetch fails
+            }
         }
 
         // Create project data object
@@ -93,6 +123,16 @@ export default async function handler(req, res) {
             contentType: 'application/json',
             addRandomSuffix: false,
         });
+
+        // Delete old project if rename was successful (and we have the url)
+        if (originalProjectUrl) {
+            try {
+                await del(originalProjectUrl);
+                console.log(`[save.js] Deleted old project: ${originalProjectUrl}`);
+            } catch (err) {
+                console.warn('[save.js] Failed to delete old project:', err);
+            }
+        }
 
         return res.status(200).json({
             success: true,
