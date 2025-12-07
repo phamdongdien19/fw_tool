@@ -53,56 +53,72 @@ const ProjectManager = {
         try {
             this.isLoading = true;
 
-            // Add timeout of 15 seconds (increased for Vercel cold starts)
+            // Add timeout of 30 seconds (increased)
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
 
             const response = await fetch(this.API_LIST, { signal: controller.signal });
             clearTimeout(timeoutId);
 
             const result = await response.json();
-            // Server returns { success, projects: [{name, url, size, uploadedAt}], count }
-            const serverProjectMeta = result.projects || [];
+            let serverProjectMeta = result.projects || [];
 
             console.log('syncFromServer: Server returned', serverProjectMeta.length, 'projects');
 
+            // Sort by uploadedAt descending (newest first) to prioritize recent projects
+            serverProjectMeta.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
             // Fetch full data for each project from blob
+            // Optimization: Keep full data only for top 4 recent projects
+            const RECENT_LIMIT = 4;
             const serverProjects = [];
-            for (const meta of serverProjectMeta) {
+
+            for (let i = 0; i < serverProjectMeta.length; i++) {
+                const meta = serverProjectMeta[i];
+                const isRecent = i < RECENT_LIMIT;
+
                 try {
                     // Fetch the actual project JSON from blob
                     const blobResponse = await fetch(meta.url);
                     if (blobResponse.ok) {
                         const projectData = await blobResponse.json();
-                        // projectData has structure: { projectName, headers, data, metadata: {...} }
 
                         const safeName = (projectData.projectName || meta.name || 'unnamed').replace(/[^a-zA-Z0-9]/g, '_');
                         const dateStr = projectData.metadata?.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+
+                        // Keep data if recent, otherwise discard to save memory
+                        const data = isRecent ? (projectData.data || []) : [];
 
                         serverProjects.push({
                             id: projectData.metadata?.id || 'proj_' + safeName + '_' + dateStr,
                             name: projectData.projectName || meta.name,
                             blobUrl: meta.url,
                             headers: projectData.headers || [],
-                            data: projectData.data || [],
+                            data: data,
+                            isCached: isRecent && data.length > 0, // Flag for UI
                             surveyId: projectData.metadata?.surveyId || '',
                             criteria: projectData.metadata?.criteria || '',
                             target: projectData.metadata?.target || 0,
                             notes: projectData.metadata?.notes || '',
+                            questions: projectData.metadata?.questions || [],
                             quotas: projectData.metadata?.quotas || [],
                             lastQuotaFetch: projectData.metadata?.lastQuotaFetch || null,
+                            config: projectData.metadata?.config || null,
                             createdAt: projectData.metadata?.createdAt || meta.uploadedAt || new Date().toISOString(),
                             updatedAt: projectData.metadata?.updatedAt || projectData.metadata?.savedAt || meta.uploadedAt || new Date().toISOString(),
                             _serverMeta: meta
                         });
                     } else {
-                        // Fallback: use list metadata if blob fetch fails
+                        // Fallback
                         console.warn(`Failed to fetch blob for ${meta.name}, using minimal data`);
                         const safeName = (meta.name || 'unnamed').replace(/[^a-zA-Z0-9]/g, '_');
                         serverProjects.push({
                             id: 'proj_' + safeName + '_' + new Date().toISOString().slice(0, 10),
                             name: meta.name,
                             blobUrl: meta.url,
+                            headers: [],
+                            data: [],
+                            isCached: false,
                             surveyId: '',
                             criteria: '',
                             target: 0,

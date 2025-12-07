@@ -2081,7 +2081,10 @@ async function renderProjectsList() {
             <div class="project-item ${isSelected ? 'active' : ''}" onclick="selectProject('${safeId}')">
                 <div class="project-item-icon">📊</div>
                 <div class="project-item-info">
-                    <div class="project-item-name">${p.name || 'Unnamed'}</div>
+                    <div class="project-item-name">
+                        ${p.isCached ? '<span title="Đã tải sẵn (nhanh)" style="color: #f59e0b; margin-right: 4px;">⚡</span>' : ''}
+                        ${p.name || 'Unnamed'}
+                    </div>
                     <div class="project-item-meta">
                         <span>Survey: ${p.surveyId || '-'}</span>
                         ${quotaInfo ? `<span>${quotaInfo}</span>` : ''}

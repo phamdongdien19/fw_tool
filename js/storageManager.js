@@ -100,6 +100,48 @@ const StorageManager = {
         try {
             if (!silent) UIRenderer.showToast('Đang tải project...', 'info');
 
+            // Quick Load: Check ProjectManager cache first
+            if (typeof ProjectManager !== 'undefined') {
+                const projects = ProjectManager.getAllProjects();
+                const cached = projects.find(p => p.name === projectName);
+
+                // If properly cached with data
+                if (cached && cached.isCached && cached.data && cached.data.length > 0) {
+                    console.log('[StorageManager] Fast loading from cache:', projectName);
+
+                    DataManager.setHeaders(cached.headers || []);
+                    DataManager.setData(cached.data || [], projectName);
+
+                    // Restore config
+                    if (cached.config) {
+                        ConfigManager.updateConfig(cached.config);
+                    }
+
+                    this.currentProject = projectName;
+                    this.isDirty = false;
+                    this.updateSaveIndicator('saved');
+                    this.saveLastProject(projectName);
+
+                    // Update UI
+                    UIRenderer.updateFileInfo();
+                    UIRenderer.renderDataTable();
+                    UIRenderer.renderDashboard();
+
+                    // Sync with Project Detail UI
+                    if (typeof window.updateProjectDataInfo === 'function') {
+                        const dataInfo = {
+                            fileName: cached.blobUrl || projectName,
+                            rowCount: cached.data.length,
+                            importedAt: cached.updatedAt || new Date().toISOString()
+                        };
+                        window.updateProjectDataInfo(cached.id, dataInfo);
+                    }
+
+                    if (!silent) UIRenderer.showToast(`Đã tải nhanh "${projectName}"`, 'success');
+                    return { success: true };
+                }
+            }
+
             const response = await fetch(`${this.apiBase}/api/projects/load?name=${encodeURIComponent(projectName)}`);
             const result = await response.json();
 
