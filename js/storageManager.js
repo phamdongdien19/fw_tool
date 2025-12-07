@@ -258,6 +258,10 @@ const StorageManager = {
                     UIRenderer.renderDataTable();
                     UIRenderer.renderDashboard();
 
+                    // Sync dropdown UI
+                    const projectSelect = document.getElementById('projectSelect');
+                    if (projectSelect) projectSelect.value = projectName;
+
                     // Sync with Project Detail UI
                     if (typeof window.updateProjectDataInfo === 'function') {
                         const dataInfo = {
@@ -298,6 +302,10 @@ const StorageManager = {
                 UIRenderer.updateFileInfo();
                 UIRenderer.renderDataTable();
                 UIRenderer.renderDashboard();
+
+                // Sync dropdown UI
+                const select = document.getElementById('projectSelect');
+                if (select) select.value = projectName;
 
                 // Sync with Project Detail UI if function exists (Project Management tab)
                 if (typeof window.updateProjectDataInfo === 'function' && typeof ProjectManager !== 'undefined') {
