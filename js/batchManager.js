@@ -32,7 +32,10 @@ const BatchManager = {
 
         // Get next batch number
         const newBatch = DataManager.getNextSmsBatch();
-        const template = config.TEMPLATE_TEXT || '';
+        // Read template from current textarea (if available) for real-time update
+        // Fallback to config if textarea not found (e.g., during automated tests)
+        const templateTextarea = document.getElementById('templateText');
+        const template = templateTextarea ? templateTextarea.value : (config.TEMPLATE_TEXT || '');
         const overwrite = config.OVERWRITE_BATCH;
 
         // Determine which rows to process
