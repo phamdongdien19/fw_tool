@@ -2022,7 +2022,6 @@ async function renderProjectsList() {
 
     // Get projects directly from cache
     const projects = ProjectManager.getAllProjects();
-    console.log('renderProjectsList: projects count =', projects.length, 'items:', projects);
     countBadge.textContent = projects.length;
 
     if (projects.length === 0) {
@@ -2045,50 +2044,39 @@ async function renderProjectsList() {
 
     const activeId = ProjectManager.activeProjectId;
 
-    listContainer.innerHTML = projects.map((p, idx) => {
-        try {
-            if (!p) {
-                console.log('renderProjectsList: item', idx, 'is null/undefined');
-                return ''; // Skip invalid items
-            }
-            console.log('renderProjectsList: item', idx, 'name=', p.name, 'id=', p.id);
+    listContainer.innerHTML = projects.map(p => {
+        if (!p) return ''; // Skip invalid items
 
-            const isActive = p.id === activeId;
-            const isSelected = p.id === selectedProjectId;
-            const isStarred = isProjectStarred(p.name);
-            const quotaInfo = p.quotas && p.quotas.length > 0
-                ? `${p.quotas.reduce((s, q) => s + q.count, 0)}/${p.quotas.reduce((s, q) => s + q.limit, 0)}`
-                : '';
+        const isActive = p.id === activeId;
+        const isSelected = p.id === selectedProjectId;
+        const isStarred = isProjectStarred(p.name);
+        const quotaInfo = p.quotas && p.quotas.length > 0
+            ? `${p.quotas.reduce((s, q) => s + q.count, 0)}/${p.quotas.reduce((s, q) => s + q.limit, 0)}`
+            : '';
 
-            // Escape special characters in name for HTML attributes
-            const safeName = (p.name || 'Unnamed').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            const safeId = (p.id || '').replace(/'/g, "\\'");
+        // Escape special characters in name for HTML attributes
+        const safeName = (p.name || 'Unnamed').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const safeId = (p.id || '').replace(/'/g, "\\'");
 
-            return `
-                <div class="project-item ${isSelected ? 'active' : ''}" onclick="selectProject('${safeId}')">
-                    <div class="project-item-icon">📊</div>
-                    <div class="project-item-info">
-                        <div class="project-item-name">${p.name || 'Unnamed'}</div>
-                        <div class="project-item-meta">
-                            <span>Survey: ${p.surveyId || '-'}</span>
-                            ${quotaInfo ? `<span>${quotaInfo}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="project-item-actions">
-                        <span class="project-star ${isStarred ? 'starred' : ''}" 
-                              onclick="event.stopPropagation(); toggleStarProject('${safeName}')"
-                              title="${isStarred ? 'Bỏ sao' : 'Gắn sao'}">${isStarred ? '⭐' : '☆'}</span>
-                        ${isActive ? '<span class="project-item-badge active">Active</span>' : ''}
+        return `
+            <div class="project-item ${isSelected ? 'active' : ''}" onclick="selectProject('${safeId}')">
+                <div class="project-item-icon">📊</div>
+                <div class="project-item-info">
+                    <div class="project-item-name">${p.name || 'Unnamed'}</div>
+                    <div class="project-item-meta">
+                        <span>Survey: ${p.surveyId || '-'}</span>
+                        ${quotaInfo ? `<span>${quotaInfo}</span>` : ''}
                     </div>
                 </div>
-            `;
-        } catch (err) {
-            console.error('renderProjectsList map ERROR at item', idx, ':', err);
-            return '';
-        }
+                <div class="project-item-actions">
+                    <span class="project-star ${isStarred ? 'starred' : ''}" 
+                          onclick="event.stopPropagation(); toggleStarProject('${safeName}')"
+                          title="${isStarred ? 'Bỏ sao' : 'Gắn sao'}">${isStarred ? '⭐' : '☆'}</span>
+                    ${isActive ? '<span class="project-item-badge active">Active</span>' : ''}
+                </div>
+            </div>
+        `;
     }).join('');
-
-    console.log('renderProjectsList: final innerHTML length =', listContainer.innerHTML.length);
 }
 
 function selectProject(projectId) {
