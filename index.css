@@ -2947,6 +2947,7 @@ textarea.form-control {
     border-radius: var(--border-radius);
     margin-bottom: 16px;
     overflow: hidden;
+    max-width: 500px;
 }
 
 .project-info-panel-header {

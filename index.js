@@ -2564,7 +2564,7 @@ async function handleProjectFileImport(event) {
         const result = await DataManager.importFile(file);
 
         if (result.success) {
-            // Update project data info display first (local)
+            // Update project data info display
             updateProjectDataInfo(project.id, {
                 fileName: file.name,
                 rowCount: result.rows || DataManager.getData().length,
@@ -2581,18 +2581,18 @@ async function handleProjectFileImport(event) {
             // Refresh project detail to show data info
             renderProjectDetail(selectedProjectId);
 
-            UIRenderer.showToast(`Đã import ${file.name} cho project "${project.name}"`, 'success');
-
-            // Try to save to server (non-blocking)
-            StorageManager.saveProject(project.name).then(saveResult => {
+            // Save to server FIRST - await this before showing success
+            try {
+                const saveResult = await StorageManager.saveProject(project.name);
                 if (saveResult.success) {
-                    console.log('Data saved to server');
+                    UIRenderer.showToast(`Đã import và lưu ${file.name} cho project "${project.name}"`, 'success');
                 } else {
-                    console.warn('Server save failed, using local backup');
+                    UIRenderer.showToast(`Đã import nhưng lưu server thất bại: ${saveResult.error || 'Unknown error'}`, 'warning');
                 }
-            }).catch(err => {
-                console.warn('Server save error:', err);
-            });
+            } catch (saveErr) {
+                console.error('Server save error:', saveErr);
+                UIRenderer.showToast(`Đã import nhưng không lưu được lên server: ${saveErr.message}`, 'warning');
+            }
         } else {
             throw new Error(result.error || 'Import failed');
         }
