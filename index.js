@@ -2042,8 +2042,12 @@ async function renderProjectsList() {
 
     const activeId = ProjectManager.activeProjectId;
 
-    listContainer.innerHTML = projects.map(p => {
-        if (!p) return ''; // Skip invalid items
+    listContainer.innerHTML = projects.map((p, idx) => {
+        if (!p) {
+            console.log('renderProjectsList: item', idx, 'is null/undefined');
+            return ''; // Skip invalid items
+        }
+        console.log('renderProjectsList: item', idx, 'name=', p.name, 'id=', p.id);
 
         const isActive = p.id === activeId;
         const isSelected = p.id === selectedProjectId;
@@ -2052,8 +2056,12 @@ async function renderProjectsList() {
             ? `${p.quotas.reduce((s, q) => s + q.count, 0)}/${p.quotas.reduce((s, q) => s + q.limit, 0)}`
             : '';
 
+        // Escape special characters in name for HTML attributes
+        const safeName = (p.name || 'Unnamed').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const safeId = (p.id || '').replace(/'/g, "\\'");
+
         return `
-            <div class="project-item ${isSelected ? 'active' : ''}" onclick="selectProject('${p.id}')">
+            <div class="project-item ${isSelected ? 'active' : ''}" onclick="selectProject('${safeId}')">
                 <div class="project-item-icon">📊</div>
                 <div class="project-item-info">
                     <div class="project-item-name">${p.name || 'Unnamed'}</div>
@@ -2064,13 +2072,15 @@ async function renderProjectsList() {
                 </div>
                 <div class="project-item-actions">
                     <span class="project-star ${isStarred ? 'starred' : ''}" 
-                          onclick="event.stopPropagation(); toggleStarProject('${p.name}')"
+                          onclick="event.stopPropagation(); toggleStarProject('${safeName}')"
                           title="${isStarred ? 'Bỏ sao' : 'Gắn sao'}">${isStarred ? '⭐' : '☆'}</span>
                     ${isActive ? '<span class="project-item-badge active">Active</span>' : ''}
                 </div>
             </div>
         `;
     }).join('');
+
+    console.log('renderProjectsList: final innerHTML length =', listContainer.innerHTML.length);
 }
 
 function selectProject(projectId) {
