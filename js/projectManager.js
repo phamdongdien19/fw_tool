@@ -66,31 +66,60 @@ const ProjectManager = {
 
             console.log('syncFromServer: Server returned', serverProjectMeta.length, 'projects');
 
-            // Convert server metadata to project objects directly (without fetching full data)
-            // Full data will be loaded on-demand when user selects a project
-            const serverProjects = serverProjectMeta.map(meta => {
-                // Create project object from metadata
-                // Sanitize name for ID generation
-                const safeName = (meta.name || 'unnamed').replace(/[^a-zA-Z0-9]/g, '_');
-                const dateStr = typeof meta.uploadedAt === 'string' ? meta.uploadedAt.slice(0, 10) : new Date().toISOString().slice(0, 10);
+            // Fetch full data for each project from blob
+            const serverProjects = [];
+            for (const meta of serverProjectMeta) {
+                try {
+                    // Fetch the actual project JSON from blob
+                    const blobResponse = await fetch(meta.url);
+                    if (blobResponse.ok) {
+                        const projectData = await blobResponse.json();
+                        // projectData has structure: { projectName, headers, data, metadata: {...} }
 
-                return {
-                    id: 'proj_' + safeName + '_' + dateStr,
-                    name: meta.name,
-                    blobUrl: meta.url, // Store blob URL for later fetching
-                    surveyId: '',
-                    criteria: '',
-                    target: 0,
-                    notes: '',
-                    quotas: [],
-                    lastQuotaFetch: null,
-                    createdAt: meta.uploadedAt || new Date().toISOString(),
-                    updatedAt: meta.uploadedAt || new Date().toISOString(),
-                    _serverMeta: meta // Store metadata for reference
-                };
-            });
+                        const safeName = (projectData.projectName || meta.name || 'unnamed').replace(/[^a-zA-Z0-9]/g, '_');
+                        const dateStr = projectData.metadata?.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
 
-            // Replace local data with server data (don't merge with potentially corrupt local cache)
+                        serverProjects.push({
+                            id: projectData.metadata?.id || 'proj_' + safeName + '_' + dateStr,
+                            name: projectData.projectName || meta.name,
+                            blobUrl: meta.url,
+                            headers: projectData.headers || [],
+                            data: projectData.data || [],
+                            surveyId: projectData.metadata?.surveyId || '',
+                            criteria: projectData.metadata?.criteria || '',
+                            target: projectData.metadata?.target || 0,
+                            notes: projectData.metadata?.notes || '',
+                            quotas: projectData.metadata?.quotas || [],
+                            lastQuotaFetch: projectData.metadata?.lastQuotaFetch || null,
+                            createdAt: projectData.metadata?.createdAt || meta.uploadedAt || new Date().toISOString(),
+                            updatedAt: projectData.metadata?.updatedAt || projectData.metadata?.savedAt || meta.uploadedAt || new Date().toISOString(),
+                            _serverMeta: meta
+                        });
+                    } else {
+                        // Fallback: use list metadata if blob fetch fails
+                        console.warn(`Failed to fetch blob for ${meta.name}, using minimal data`);
+                        const safeName = (meta.name || 'unnamed').replace(/[^a-zA-Z0-9]/g, '_');
+                        serverProjects.push({
+                            id: 'proj_' + safeName + '_' + new Date().toISOString().slice(0, 10),
+                            name: meta.name,
+                            blobUrl: meta.url,
+                            surveyId: '',
+                            criteria: '',
+                            target: 0,
+                            notes: '',
+                            quotas: [],
+                            lastQuotaFetch: null,
+                            createdAt: meta.uploadedAt || new Date().toISOString(),
+                            updatedAt: meta.uploadedAt || new Date().toISOString(),
+                            _serverMeta: meta
+                        });
+                    }
+                } catch (fetchErr) {
+                    console.warn(`Error fetching blob for ${meta.name}:`, fetchErr.message);
+                }
+            }
+
+            // Replace local data with server data
             this.projects = serverProjects;
 
             // Clear and save to localStorage
