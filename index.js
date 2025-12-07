@@ -2019,6 +2019,7 @@ async function renderProjectsList() {
 
     // Get projects directly from cache
     const projects = ProjectManager.getAllProjects();
+    console.log('renderProjectsList: projects count =', projects.length, 'items:', projects);
     countBadge.textContent = projects.length;
 
     if (projects.length === 0) {
