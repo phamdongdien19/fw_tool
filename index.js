@@ -617,12 +617,23 @@ function saveCurrentTemplate() {
         return;
     }
 
-    const name = prompt('Nhập tên template:');
-    if (name) {
-        ConfigManager.addTemplate(name, text);
-        UIRenderer.renderTemplateLibrary();
-        UIRenderer.showToast('Đã lưu template.', 'success');
-    }
+    // Use custom modal instead of browser prompt (which may be blocked)
+    openModal('Lưu Template', `
+        <div class="form-group">
+            <label>Tên template:</label>
+            <input type="text" id="newTemplateName" class="form-control" placeholder="Nhập tên template..." autofocus>
+        </div>
+    `, () => {
+        const name = document.getElementById('newTemplateName').value.trim();
+        if (name) {
+            ConfigManager.addTemplate(name, text);
+            UIRenderer.renderTemplateLibrary();
+            UIRenderer.showToast('Đã lưu template.', 'success');
+            closeModal();
+        } else {
+            UIRenderer.showToast('Vui lòng nhập tên template.', 'warning');
+        }
+    });
 }
 
 function loadTemplate(id) {
@@ -634,10 +645,17 @@ function loadTemplate(id) {
 }
 
 function deleteTemplate(id) {
-    if (confirm('Xóa template này?')) {
+    const template = ConfigManager.getTemplate(id);
+    const templateName = template ? template.name : 'template này';
+
+    openModal('Xóa Template', `
+        <p>Bạn có chắc muốn xóa "${templateName}"?</p>
+    `, () => {
         ConfigManager.deleteTemplate(id);
         UIRenderer.renderTemplateLibrary();
-    }
+        UIRenderer.showToast('Đã xóa template.', 'success');
+        closeModal();
+    });
 }
 
 // ===== Utility =====
