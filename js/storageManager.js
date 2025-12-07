@@ -214,6 +214,8 @@ const StorageManager = {
 
     /**
      * Sync saved project with ProjectManager
+     * NOTE: This should NOT call createProject() because that would overwrite
+     * the blob we just saved with empty data. Instead, just add to local cache.
      */
     async syncProjectToManager(projectName, dataUrl) {
         if (typeof ProjectManager === 'undefined') return;
@@ -223,18 +225,33 @@ const StorageManager = {
         const existing = existingProjects.find(p => p.name === projectName);
 
         if (existing) {
-            // Update with data URL
-            await ProjectManager.updateProject(existing.id, { dataFileUrl: dataUrl });
+            // Update local cache only (don't call updateProject which saves empty data)
+            existing.dataFileUrl = dataUrl;
+            existing.updatedAt = new Date().toISOString();
+            ProjectManager.saveToLocalStorage();
         } else {
-            // Create new ProjectManager entry for this data project
-            await ProjectManager.createProject({
+            // Add to local cache only - DO NOT call createProject() or saveProjectToServer()
+            // because that would overwrite the blob we just saved with actual data
+            const newProject = {
+                id: ProjectManager.generateId(),
                 name: projectName,
                 surveyId: '',
                 criteria: '',
                 target: 0,
                 notes: 'Auto-created from data save',
-                dataFileUrl: dataUrl
-            });
+                dataFileUrl: dataUrl,
+                quotas: [],
+                lastQuotaFetch: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            ProjectManager.projects.unshift(newProject);
+            ProjectManager.saveToLocalStorage();
+
+            // Refresh the project dropdown
+            if (typeof renderProjectsList === 'function') {
+                renderProjectsList();
+            }
         }
     },
 

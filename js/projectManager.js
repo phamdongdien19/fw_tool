@@ -189,6 +189,8 @@ const ProjectManager = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     projectName: project.name,
+                    // If we don't have data/headers, flag this as a metadata update
+                    isMetadataUpdate: (!project.data || project.data.length === 0),
                     data: project.data || [],
                     headers: project.headers || [],
                     metadata: {
