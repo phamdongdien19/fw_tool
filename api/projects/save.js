@@ -1,4 +1,5 @@
 import { put, list, del, head } from '@vercel/blob';
+import { gunzipSync } from 'zlib';
 
 export const config = {
     api: {
@@ -23,7 +24,24 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { projectName, data: reqData, headers: reqHeaders, metadata, isMetadataUpdate } = req.body;
+        let reqBody = req.body;
+
+        // Handle gzip
+        const contentEncoding = req.headers['content-encoding'] || '';
+        const contentType = req.headers['content-type'] || '';
+
+        if (contentEncoding.includes('gzip') || contentType.includes('application/octet-stream')) {
+            if (Buffer.isBuffer(reqBody)) {
+                try {
+                    const decompressed = gunzipSync(reqBody);
+                    reqBody = JSON.parse(decompressed.toString('utf-8'));
+                } catch (e) {
+                    console.error('Decompression error', e);
+                }
+            }
+        }
+
+        const { projectName, data: reqData, headers: reqHeaders, metadata, isMetadataUpdate, originalProjectName } = reqBody;
 
         if (!projectName) {
             return res.status(400).json({

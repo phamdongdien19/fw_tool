@@ -115,16 +115,40 @@ const StorageManager = {
                 savedAt: new Date().toISOString()
             };
 
+            const payload = {
+                projectName,
+                data,
+                headers,
+                metadata
+            };
+            const jsonString = JSON.stringify(payload);
+            let body = jsonString;
+            const headersList = { 'Content-Type': 'application/json' };
+
+            // Compression logic for large payloads (>1MB)
+            if (jsonString.length > 1024 * 1024 && typeof CompressionStream !== 'undefined') {
+                try {
+                    const blob = new Blob([jsonString]);
+                    const stream = blob.stream().pipeThrough(new CompressionStream('gzip'));
+                    const compressedResponse = await new Response(stream);
+                    const compressedBlob = await compressedResponse.blob();
+
+                    if (compressedBlob.size < blob.size) {
+                        body = compressedBlob;
+                        headersList['Content-Encoding'] = 'gzip';
+                        headersList['Content-Type'] = 'application/octet-stream';
+                        console.log(`[StorageManager] Compressed ${blob.size} -> ${compressedBlob.size}`);
+                    }
+                } catch (e) {
+                    console.error('Compression failed, sending raw JSON', e);
+                }
+            }
+
             // Call API
             const response = await fetch(`${this.apiBase}/api/projects/save`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    projectName,
-                    data,
-                    headers,
-                    metadata
-                })
+                headers: headersList,
+                body: body
             });
 
             const result = await response.json();
