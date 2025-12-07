@@ -242,10 +242,11 @@ const ProjectManager = {
             updatedAt: new Date().toISOString()
         };
 
-        // Add to local cache first
-        this.projects.unshift(project);
+        // Save to server FIRST - if this fails, don't add locally
+        await this.saveProjectToServer(project);
 
-        // Save to localStorage immediately
+        // Only add to local cache after server save succeeds
+        this.projects.unshift(project);
         this.saveToLocalStorage();
 
         // Refresh the Filter & Batch dropdown
@@ -253,15 +254,10 @@ const ProjectManager = {
             StorageManager.loadProjectList();
         }
 
-        // Re-render UI immediately after adding to array
+        // Re-render UI after successful save
         if (typeof renderProjectsList === 'function') {
             renderProjectsList();
         }
-
-        // Save to server (async, don't block)
-        this.saveProjectToServer(project).catch(e => {
-            console.error('Background save failed:', e);
-        });
 
         return project;
     },
@@ -271,18 +267,22 @@ const ProjectManager = {
      */
     async updateProject(id, updates) {
         const index = this.projects.findIndex(p => p.id === id);
-        if (index === -1) return null;
+        if (index === -1) {
+            throw new Error('Project not found');
+        }
 
-        this.projects[index] = {
+        const updatedProject = {
             ...this.projects[index],
             ...updates,
             updatedAt: new Date().toISOString()
         };
 
-        // Save to server (async)
-        this.updateProjectOnServer(id, updates).catch(e => {
-            console.error('Background update failed:', e);
-        });
+        // Save to server FIRST - if this fails, don't update locally
+        await this.updateProjectOnServer(id, updates);
+
+        // Only update local cache after server save succeeds
+        this.projects[index] = updatedProject;
+        this.saveToLocalStorage();
 
         return this.projects[index];
     },
