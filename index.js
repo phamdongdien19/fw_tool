@@ -2609,26 +2609,45 @@ function renderProjectInfoPanel() {
         }).join('');
     }
 
+    // Default vendors (always shown)
+    const defaultVendors = [
+        { name: 'Cint', url: 'https://exchange.cint.com/accounts/986/projects', note: '' },
+        { name: 'Purespectrum', url: 'https://platform.purespectrum.com/dashboard', note: '' }
+    ];
+
+    // Merge project vendors with defaults (project vendors override defaults by name)
+    const projectVendors = activeProject.vendors || [];
+    const allVendors = [...defaultVendors];
+
+    // Add project-specific vendors that aren't already in defaults
+    projectVendors.forEach(pv => {
+        const existingIndex = allVendors.findIndex(v => v.name.toLowerCase() === pv.name.toLowerCase());
+        if (existingIndex >= 0) {
+            // Override default with project-specific (may have custom URL/note)
+            allVendors[existingIndex] = pv;
+        } else {
+            // Add new vendor from project
+            allVendors.push(pv);
+        }
+    });
+
     // Build vendors HTML
-    let vendorsHtml = '';
-    if (vendors.length > 0) {
-        vendorsHtml = `
-            <div class="fieldwork-section">
-                <div class="section-title">🔗 Fieldwork Solution</div>
-                <div class="vendor-list">
-                    ${vendors.map((v, i) => `
-                        <div class="vendor-item">
-                            <span class="vendor-icon">${getVendorIcon(v.name)}</span>
-                            <div class="vendor-info">
-                                <a href="${v.url}" target="_blank" class="vendor-name">${v.name}</a>
-                                ${v.note ? `<span class="vendor-note">${v.note}</span>` : ''}
-                            </div>
+    const vendorsHtml = `
+        <div class="fieldwork-section">
+            <div class="section-title">🔗 Fieldwork Solution</div>
+            <div class="vendor-list">
+                ${allVendors.map((v, i) => `
+                    <div class="vendor-item">
+                        <span class="vendor-icon">${getVendorIcon(v.name)}</span>
+                        <div class="vendor-info">
+                            <a href="${v.url}" target="_blank" class="vendor-name">${v.name}</a>
+                            ${v.note ? `<span class="vendor-note">${v.note}</span>` : ''}
                         </div>
-                    `).join('')}
-                </div>
+                    </div>
+                `).join('')}
             </div>
-        `;
-    }
+        </div>
+    `;
 
     container.innerHTML = `
         <div class="project-info-panel">
