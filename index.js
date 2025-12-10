@@ -2348,9 +2348,25 @@ function renderProjectQuotas(project) {
 
     quotaList.innerHTML = html;
 
-    // Summary
-    const totalCompleted = project.quotas.reduce((s, q) => s + q.count, 0);
-    const totalRemaining = project.quotas.reduce((s, q) => s + q.remaining, 0);
+    // Summary - use TOTAL quota logic
+    const totalQuota = project.quotas.find(q =>
+        q.name && q.name.toUpperCase().startsWith('TOTAL')
+    );
+
+    let totalCompleted, totalRemaining;
+
+    if (totalQuota) {
+        // Parse limit from quota name (e.g. "TOTAL 250" → 250)
+        const nameMatch = totalQuota.name.match(/TOTAL\s*(\d+)/i);
+        const limitFromName = nameMatch ? parseInt(nameMatch[1]) : totalQuota.limit;
+
+        totalCompleted = totalQuota.count || 0;
+        totalRemaining = limitFromName - totalCompleted;
+    } else {
+        // Fallback
+        totalCompleted = project.quotas.reduce((s, q) => s + q.count, 0);
+        totalRemaining = project.quotas.reduce((s, q) => s + q.remaining, 0);
+    }
 
     document.getElementById('quotaTotalCompleted').textContent = totalCompleted;
     document.getElementById('quotaTotalRemaining').textContent = totalRemaining;

@@ -3055,18 +3055,19 @@ textarea.form-control {
 /* Quota Expand Button */
 .quota-expand-btn {
     display: inline-block;
-    background: var(--bg-card);
-    color: var(--text-primary);
-    padding: 2px 8px;
+    background: #374151;
+    color: #ffffff;
+    padding: 2px 10px;
     border-radius: 4px;
     font-size: 11px;
     cursor: pointer;
     margin-left: 8px;
-    border: 1px solid var(--border-color);
+    border: 1px solid #4b5563;
+    font-weight: 500;
 }
 
 .quota-expand-btn:hover {
-    background: var(--bg-hover);
+    background: #4b5563;
 }
 
 /* Vendor Row Alignment */
