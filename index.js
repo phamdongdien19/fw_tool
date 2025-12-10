@@ -2718,11 +2718,76 @@ function renderProjectInfoPanel() {
                     ${vendorsHtml}
                 </div>
                 
-                <!-- Save Button -->
-                <div style="margin-top: 12px; display: flex; gap: 8px;">
-                    <button class="btn btn-sm btn-primary" onclick="saveProjectInfoNow()">💾 Lưu thay đổi</button>
-                    <span id="projectInfoSaveStatus" style="font-size: 12px; color: var(--text-secondary); align-self: center;"></span>
+    // Calculate suggestions logic
+    let suggestionsHtml = '';
+    if (quotas.length > 0) {
+        // Filter out TOTAL and completed quotas
+        const activeQuotas = quotas.filter(q => 
+            !q.name.toUpperCase().startsWith('TOTAL') && q.remaining > 0
+        );
+        
+        // Sort by remaining (descending) - prioritize those needing most fill
+        activeQuotas.sort((a, b) => b.remaining - a.remaining);
+        
+        // Take top 3
+        const topSuggestions = activeQuotas.slice(0, 3);
+        
+        if (topSuggestions.length > 0) {
+            const listItems = topSuggestions.map(q => 
+                `< li > <strong>${q.name}:</strong> Thiếu < span style = "color:#d9534f; font-weight:bold;" > ${ q.remaining }</span ></li > `
+            ).join('');
+            
+            suggestionsHtml = `
+        < div class="quota-suggestions" style = "margin-top: 12px; background: #fff3cd; padding: 10px; border-radius: 6px; border: 1px solid #ffeeba;" >
+                    <div style="display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 12px; margin-bottom: 6px; color: #856404;">
+                        <span>🔥</span> Cần ưu tiên chạy:
+                    </div>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #856404; line-height: 1.5;">
+                        ${listItems}
+                    </ul>
+                </div >
+        `;
+        }
+    }
+
+    // Save Button
+    const saveButtonHtml = `
+        < div style = "margin-top: 12px; display: flex; gap: 8px;" >
+            <button class="btn btn-sm btn-primary" onclick="saveProjectInfoNow()">💾 Lưu thay đổi</button>
+            <span id="projectInfoSaveStatus" style="font-size: 12px; color: var(--text-secondary); align-self: center;"></span>
+        </div >
+        `;
+
+    container.innerHTML = `
+        < div class="project-info-panel" style = "max-width: 600px;" >
+            <div class="project-info-panel-header" onclick="toggleProjectInfoPanel()">
+                <h4>📋 ${activeProject.name}</h4>
+                <button class="project-info-panel-toggle" id="projectInfoToggle">−</button>
+            </div>
+            <div class="project-info-panel-body" id="projectInfoBody">
+                ${activeProject.criteria ? `<div class="info-line"><strong>📌 Tiêu chí:</strong> ${activeProject.criteria}</div>` : ''}
+                
+                <!-- Quick Notes -->
+                <div class="info-line" style="margin-top: 8px;">
+                    <strong>💡 Ghi chú nhanh:</strong>
                 </div>
+                <div style="margin: 8px 0;">
+                    <textarea id="projectQuickNotes" class="form-control form-control-sm" rows="2" 
+                        placeholder="Nhập ghi chú nhanh..." style="resize: vertical; font-size: 12px;"
+                        onchange="markVendorChanged()">${activeProject.notes || ''}</textarea>
+                </div>
+                
+                <!-- Vendors with Links -->
+                <div class="info-line" style="margin-top: 12px;">
+                    <strong>🏢 Sample Vendors:</strong>
+                </div>
+                <div style="margin: 8px 0;">
+                    ${vendorsHtml}
+                </div>
+                
+                ${saveButtonHtml}
+                
+                ${suggestionsHtml}
                 
                 ${summary ? `
                     <div class="quota-summary-mini" style="margin-top: 12px;">
@@ -2741,8 +2806,8 @@ function renderProjectInfoPanel() {
                     </div>
                 ` : '<div class="info-line"><em>Chưa có dữ liệu quota</em></div>'}
             </div>
-        </div>
-    `;
+        </div >
+        `;
 }
 
 // Mark vendor section as having unsaved changes
@@ -2789,7 +2854,7 @@ async function saveProjectInfoNow() {
     } catch (error) {
         console.error('Save project info error:', error);
         if (statusEl) statusEl.textContent = '❌ Lỗi!';
-        UIRenderer.showToast(`Lỗi: ${error.message}`, 'error');
+        UIRenderer.showToast(`Lỗi: ${ error.message } `, 'error');
     }
 }
 
@@ -2821,7 +2886,7 @@ function toggleQuotaDetails(location) {
             } else {
                 // Determine count if possible, or just "Xem thêm"
                 const count = details.children.length;
-                btn.textContent = `▼ Xem thêm (${count})`;
+                btn.textContent = `▼ Xem thêm(${ count })`;
             }
         }
     }
@@ -2853,8 +2918,8 @@ async function deleteProjectFromList(projectId) {
     // Use custom modal instead of browser's confirm() which can be blocked
     openModal(
         'Xác nhận xóa Project',
-        `<p>Bạn có chắc chắn muốn xóa project <strong>"${project.name}"</strong>?</p>
-         <p style="color: var(--danger-color); font-size: 0.9em;">⚠️ Hành động này không thể hoàn tác.</p>`,
+        `< p > Bạn có chắc chắn muốn xóa project < strong > "${project.name}"</strong >?</p >
+        <p style="color: var(--danger-color); font-size: 0.9em;">⚠️ Hành động này không thể hoàn tác.</p>`,
         async () => {
             closeModal();
             UIRenderer.showToast('Đang xóa project...', 'info');
@@ -2869,8 +2934,8 @@ async function deleteProjectFromList(projectId) {
                 }
 
                 renderProjectsList();
-                UIRenderer.showToast(`Đã xóa project: ${project.name}`, 'success');
-                addNotification(`Xóa project: ${project.name}`, '🗑️');
+                UIRenderer.showToast(`Đã xóa project: ${ project.name } `, 'success');
+                addNotification(`Xóa project: ${ project.name } `, '🗑️');
 
                 // Also refresh the StorageManager project list
                 if (typeof StorageManager !== 'undefined' && StorageManager.loadProjectList) {
@@ -2878,7 +2943,7 @@ async function deleteProjectFromList(projectId) {
                 }
             } catch (error) {
                 console.error('Delete project failed:', error);
-                UIRenderer.showToast(`Lỗi xóa project: ${error.message}`, 'error');
+                UIRenderer.showToast(`Lỗi xóa project: ${ error.message } `, 'error');
             }
         }
     );
@@ -3074,15 +3139,15 @@ function updateProjectDataInfo(projectId, dataInfo) {
     if (infoContainer && dataInfo) {
         const importDate = new Date(dataInfo.importedAt).toLocaleString('vi-VN');
         infoContainer.innerHTML = `
-            <div class="data-info-content">
+        < div class="data-info-content" >
                 <p><strong>File:</strong> ${dataInfo.fileName}</p>
                 <p><strong>Số dòng:</strong> ${dataInfo.rowCount}</p>
                 <p><strong>Import lúc:</strong> ${importDate}</p>
-            </div>
-            <button class="btn btn-sm btn-outline" onclick="loadProjectData('${projectId}')">
-                📂 Load Data
-            </button>
-        `;
+            </div >
+        <button class="btn btn-sm btn-outline" onclick="loadProjectData('${projectId}')">
+            📂 Load Data
+        </button>
+    `;
     }
 }
 
