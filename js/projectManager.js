@@ -107,6 +107,7 @@ const ProjectManager = {
                             notes: projectData.metadata?.notes || '',
                             vendors: projectData.metadata?.vendors || [],
                             vendorLinks: projectData.metadata?.vendorLinks || {},
+                            customVendors: projectData.metadata?.customVendors || [],
                             questions: projectData.metadata?.questions || [],
                             quotas: projectData.metadata?.quotas || [],
                             lastQuotaFetch: projectData.metadata?.lastQuotaFetch || null,
@@ -132,6 +133,7 @@ const ProjectManager = {
                             notes: '',
                             vendors: [],
                             vendorLinks: {},
+                            customVendors: [],
                             quotas: [],
                             lastQuotaFetch: null,
                             createdAt: meta.uploadedAt || new Date().toISOString(),
@@ -180,6 +182,7 @@ const ProjectManager = {
                 notes: p.notes,
                 vendors: p.vendors || [],
                 vendorLinks: p.vendorLinks || {},
+                customVendors: p.customVendors || [],
                 quotas: p.quotas,
                 lastQuotaFetch: p.lastQuotaFetch,
                 createdAt: p.createdAt,
@@ -225,6 +228,7 @@ const ProjectManager = {
                     notes: project.notes,
                     vendors: project.vendors || [],
                     vendorLinks: project.vendorLinks || {},
+                    customVendors: project.customVendors || [],
                     quotas: project.quotas,
                     lastQuotaFetch: project.lastQuotaFetch,
                     createdAt: project.createdAt,
@@ -309,7 +313,7 @@ const ProjectManager = {
     /**
      * Create a new project
      */
-    async createProject({ name, surveyId, criteria, target, notes, vendorLinks }) {
+    async createProject({ name, surveyId, criteria, target, notes, vendorLinks, customVendors }) {
         const project = {
             id: this.generateId(),
             name: name || 'Untitled Project',
@@ -319,6 +323,7 @@ const ProjectManager = {
             notes: notes || '',
             vendors: [],
             vendorLinks: vendorLinks || {},
+            customVendors: customVendors || [],
             quotas: [],
             lastQuotaFetch: null,
             createdAt: new Date().toISOString(),

@@ -2400,6 +2400,18 @@ function openProjectModal(editId = null) {
     const project = editId ? ProjectManager.getProject(editId) : null;
     const isEdit = !!project;
     const vendorLinks = isEdit ? (project.vendorLinks || {}) : {};
+    const customVendors = isEdit ? (project.customVendors || []) : [];
+
+    // Build custom vendors HTML
+    const customVendorsHtml = customVendors.map((v, idx) => `
+        <div class="custom-vendor-row" data-idx="${idx}" style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input type="text" class="form-control form-control-sm customVendorName" 
+                value="${v.name || ''}" placeholder="Tên vendor" style="flex: 1;">
+            <input type="text" class="form-control form-control-sm customVendorUrl" 
+                value="${v.url || ''}" placeholder="URL" style="flex: 2;">
+            <button type="button" class="btn btn-xs btn-danger" onclick="removeCustomVendorRow(this)">✕</button>
+        </div>
+    `).join('');
 
     const modalBody = `
         <div class="form-group">
@@ -2447,10 +2459,15 @@ function openProjectModal(editId = null) {
             <input type="text" id="vendorLinkCint" class="form-control" 
                 value="${vendorLinks.cint || ''}" placeholder="Link dự án Cint">
         </div>
-        <div class="form-group">
-            <label>Vendor khác Link</label>
-            <input type="text" id="vendorLinkOther" class="form-control" 
-                value="${vendorLinks.other || ''}" placeholder="Link vendor khác">
+        
+        <hr style="margin: 16px 0; border-color: var(--border-color);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="font-size: 14px; margin: 0;">➕ Vendors khác</h4>
+            <button type="button" class="btn btn-xs btn-outline" onclick="addCustomVendorRow()">+ Thêm Vendor</button>
+        </div>
+        
+        <div id="customVendorsContainer">
+            ${customVendorsHtml}
         </div>
     `;
 
@@ -2461,6 +2478,30 @@ function openProjectModal(editId = null) {
     );
 }
 
+// Add custom vendor row in modal
+function addCustomVendorRow() {
+    const container = document.getElementById('customVendorsContainer');
+    const row = document.createElement('div');
+    row.className = 'custom-vendor-row';
+    row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+    row.innerHTML = `
+        <input type="text" class="form-control form-control-sm customVendorName" 
+            placeholder="Tên vendor" style="flex: 1;">
+        <input type="text" class="form-control form-control-sm customVendorUrl" 
+            placeholder="URL" style="flex: 2;">
+        <button type="button" class="btn btn-xs btn-danger" onclick="removeCustomVendorRow(this)">✕</button>
+    `;
+    container.appendChild(row);
+}
+
+// Remove custom vendor row
+function removeCustomVendorRow(btn) {
+    btn.parentElement.remove();
+}
+
+window.addCustomVendorRow = addCustomVendorRow;
+window.removeCustomVendorRow = removeCustomVendorRow;
+
 async function saveProjectFromModal(editId = null) {
     const name = document.getElementById('projectNameInput').value.trim();
     const surveyId = document.getElementById('projectSurveyIdInput').value.trim();
@@ -2468,12 +2509,23 @@ async function saveProjectFromModal(editId = null) {
     const criteria = document.getElementById('projectCriteriaInput').value.trim();
     const notes = document.getElementById('projectNotesInput').value.trim();
 
-    // Get vendor links
+    // Get vendor links (default vendors)
     const vendorLinks = {
         purespectrum: (document.getElementById('vendorLinkPurespectrum')?.value || '').trim(),
-        cint: (document.getElementById('vendorLinkCint')?.value || '').trim(),
-        other: (document.getElementById('vendorLinkOther')?.value || '').trim()
+        cint: (document.getElementById('vendorLinkCint')?.value || '').trim()
     };
+
+    // Get custom vendors
+    const customVendors = [];
+    document.querySelectorAll('.custom-vendor-row').forEach(row => {
+        const nameInput = row.querySelector('.customVendorName');
+        const urlInput = row.querySelector('.customVendorUrl');
+        const vendorName = nameInput?.value?.trim() || '';
+        const vendorUrl = urlInput?.value?.trim() || '';
+        if (vendorName || vendorUrl) {
+            customVendors.push({ name: vendorName, url: vendorUrl });
+        }
+    });
 
     if (!name) {
         UIRenderer.showToast('Vui lòng nhập tên project', 'warning');
@@ -2481,10 +2533,10 @@ async function saveProjectFromModal(editId = null) {
     }
 
     if (editId) {
-        await ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes, vendorLinks });
+        await ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes, vendorLinks, customVendors });
         UIRenderer.showToast('Đã cập nhật project', 'success');
     } else {
-        const newProject = await ProjectManager.createProject({ name, surveyId, target, criteria, notes, vendorLinks });
+        const newProject = await ProjectManager.createProject({ name, surveyId, target, criteria, notes, vendorLinks, customVendors });
         selectedProjectId = newProject.id;
         UIRenderer.showToast('Đã tạo project mới', 'success');
     }
@@ -2588,15 +2640,16 @@ function renderProjectInfoPanel() {
     // Build vendor rows with logo, link input, and hyperlink button
     const buildVendorRow = (id, name, logo, link, defaultUrl) => {
         const platformUrl = defaultUrl || '#';
+        const isDefault = !!defaultUrl;
 
         const logoHtml = logo
             ? `<div class="vendor-logo">
-                <a href="${platformUrl}" target="_blank" title="Mở ${name} Platform">
+                <a href="${platformUrl}" target="_blank" title="${isDefault ? 'Mở Platform' : 'Link vendor'}">
                     <img src="${logo}" alt="${name}">
                 </a>
                </div>`
-            : `<div class="vendor-name">
-                <a href="${platformUrl}" target="_blank">${name}</a>
+            : `<div class="vendor-name" style="min-width: 100px;">
+                <a href="${platformUrl}" target="_blank" style="${platformUrl === '#' ? 'pointer-events: none; text-decoration: none; color: inherit;' : ''}">${name}</a>
                </div>`;
 
         return `
@@ -2614,10 +2667,28 @@ function renderProjectInfoPanel() {
         `;
     };
 
+    // Custom vendors HTML
+    const customVendors = activeProject.customVendors || [];
+    const customVendorsHtml = customVendors.map((v, idx) => {
+        const link = v.url || '';
+        return `
+            <div class="vendor-row">
+                <div class="vendor-name" style="min-width: 100px; font-weight: 500;">${v.name}</div>
+                <input type="text" 
+                    class="form-control form-control-sm" 
+                    style="flex: 1; font-size: 12px;" 
+                    value="${link}"
+                    disabled
+                    title="URL này được set trong bước Tạo/Sửa Project">
+                ${link ? `<a href="${link}" target="_blank" class="btn btn-xs btn-outline" title="Mở link">🔗</a>` : ''}
+            </div>
+        `;
+    }).join('');
+
     const vendorsHtml = `
         ${buildVendorRow('purespectrum', 'PureSpectrum', 'assets/icons/purespectrum.png', vendorLinks.purespectrum, defaultVendorUrls.purespectrum)}
         ${buildVendorRow('cint', 'Cint', 'assets/icons/cint.png', vendorLinks.cint, defaultVendorUrls.cint)}
-        ${buildVendorRow('other', 'Khác', null, vendorLinks.other, null)}
+        ${customVendorsHtml}
     `;
 
     container.innerHTML = `
