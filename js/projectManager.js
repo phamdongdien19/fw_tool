@@ -497,7 +497,7 @@ const ProjectManager = {
     },
 
     /**
-     * Get quota summary for a project
+     * Get quota summary for a project (uses TOTAL quota)
      */
     getQuotaSummary(projectId) {
         const project = this.getProject(projectId);
@@ -505,6 +505,26 @@ const ProjectManager = {
             return null;
         }
 
+        // Find TOTAL quota
+        const totalQuota = project.quotas.find(q =>
+            q.name && q.name.toUpperCase().startsWith('TOTAL')
+        );
+
+        if (totalQuota) {
+            // Parse limit from quota name (e.g. "TOTAL 250" → 250)
+            const nameMatch = totalQuota.name.match(/TOTAL\s*(\d+)/i);
+            const limitFromName = nameMatch ? parseInt(nameMatch[1]) : totalQuota.limit;
+
+            return {
+                totalLimit: limitFromName,
+                totalCompleted: totalQuota.count || 0,
+                totalRemaining: limitFromName - (totalQuota.count || 0),
+                quotaCount: project.quotas.length,
+                lastFetch: project.lastQuotaFetch
+            };
+        }
+
+        // Fallback: sum all quotas if no TOTAL found
         return {
             totalLimit: project.quotas.reduce((sum, q) => sum + q.limit, 0),
             totalCompleted: project.quotas.reduce((sum, q) => sum + q.count, 0),

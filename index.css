@@ -3052,6 +3052,65 @@ textarea.form-control {
     background: var(--color-primary);
 }
 
+/* Quota Expand Button */
+.quota-expand-btn {
+    display: inline-block;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    margin-left: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.quota-expand-btn:hover {
+    background: var(--bg-hover);
+}
+
+/* Vendor Row Alignment */
+.vendor-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.vendor-row .vendor-logo {
+    width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.vendor-row .vendor-logo img {
+    height: 24px;
+    width: auto;
+    object-fit: contain;
+}
+
+.vendor-row .vendor-logo a {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.vendor-row .vendor-name {
+    font-weight: 500;
+    min-width: 100px;
+    color: var(--color-primary);
+}
+
+.vendor-row .vendor-name a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.vendor-row .vendor-name a:hover {
+    text-decoration: underline;
+}
+
 /* Project Data Section */
 .project-data-section {
     margin-top: 16px;

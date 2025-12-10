@@ -2527,33 +2527,45 @@ function renderProjectInfoPanel() {
         }).join('');
     }
 
+    // Default vendor platform URLs
+    const defaultVendorUrls = {
+        purespectrum: 'https://platform.purespectrum.com/dashboard',
+        cint: 'https://exchange.cint.com/accounts/986/projects'
+    };
+
     // Build vendor rows with logo, link input, and hyperlink button
-    const buildVendorRow = (id, name, logo, link) => {
+    const buildVendorRow = (id, name, logo, link, defaultUrl) => {
+        const platformUrl = defaultUrl || '#';
+
         const logoHtml = logo
-            ? `<a href="${link || '#'}" target="_blank" style="display: inline-flex; align-items: center; ${link ? '' : 'pointer-events: none; opacity: 0.5;'}">
-                <img src="${logo}" alt="${name}" style="height: 22px; width: auto; cursor: ${link ? 'pointer' : 'default'};" title="${link ? 'Mở link ' + name : 'Chưa có link'}">
-               </a>`
-            : `<span style="font-weight: 500; min-width: 80px;">${name}</span>`;
+            ? `<div class="vendor-logo">
+                <a href="${platformUrl}" target="_blank" title="Mở ${name} Platform">
+                    <img src="${logo}" alt="${name}">
+                </a>
+               </div>`
+            : `<div class="vendor-name">
+                <a href="${platformUrl}" target="_blank">${name}</a>
+               </div>`;
 
         return `
-            <div class="vendor-row" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <div style="min-width: 100px;">${logoHtml}</div>
+            <div class="vendor-row">
+                ${logoHtml}
                 <input type="text" 
                     id="vendorLink_${id}" 
                     class="form-control form-control-sm" 
                     style="flex: 1; font-size: 12px;" 
-                    placeholder="Nhập link ${name}..." 
+                    placeholder="Nhập link dự án ${name}..." 
                     value="${link || ''}"
                     onchange="markVendorChanged()">
-                ${link ? `<a href="${link}" target="_blank" class="btn btn-xs btn-outline" title="Mở link">🔗</a>` : ''}
+                ${link ? `<a href="${link}" target="_blank" class="btn btn-xs btn-outline" title="Mở link dự án">🔗</a>` : ''}
             </div>
         `;
     };
 
     const vendorsHtml = `
-        ${buildVendorRow('purespectrum', 'PureSpectrum', 'assets/icons/purespectrum.png', vendorLinks.purespectrum)}
-        ${buildVendorRow('cint', 'Cint', 'assets/icons/cint.png', vendorLinks.cint)}
-        ${buildVendorRow('other', 'Khác', null, vendorLinks.other)}
+        ${buildVendorRow('purespectrum', 'PureSpectrum', 'assets/icons/purespectrum.png', vendorLinks.purespectrum, defaultVendorUrls.purespectrum)}
+        ${buildVendorRow('cint', 'Cint', 'assets/icons/cint.png', vendorLinks.cint, defaultVendorUrls.cint)}
+        ${buildVendorRow('other', 'Khác', null, vendorLinks.other, null)}
     `;
 
     container.innerHTML = `
