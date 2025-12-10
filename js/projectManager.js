@@ -105,6 +105,7 @@ const ProjectManager = {
                             criteria: projectData.metadata?.criteria || '',
                             target: projectData.metadata?.target || 0,
                             notes: projectData.metadata?.notes || '',
+                            vendors: projectData.metadata?.vendors || [],
                             questions: projectData.metadata?.questions || [],
                             quotas: projectData.metadata?.quotas || [],
                             lastQuotaFetch: projectData.metadata?.lastQuotaFetch || null,
@@ -128,6 +129,7 @@ const ProjectManager = {
                             criteria: '',
                             target: 0,
                             notes: '',
+                            vendors: [],
                             quotas: [],
                             lastQuotaFetch: null,
                             createdAt: meta.uploadedAt || new Date().toISOString(),
@@ -174,6 +176,7 @@ const ProjectManager = {
                 criteria: p.criteria,
                 target: p.target,
                 notes: p.notes,
+                vendors: p.vendors || [],
                 quotas: p.quotas,
                 lastQuotaFetch: p.lastQuotaFetch,
                 createdAt: p.createdAt,
@@ -217,6 +220,7 @@ const ProjectManager = {
                     criteria: project.criteria,
                     target: project.target,
                     notes: project.notes,
+                    vendors: project.vendors || [],
                     quotas: project.quotas,
                     lastQuotaFetch: project.lastQuotaFetch,
                     createdAt: project.createdAt,
@@ -301,7 +305,7 @@ const ProjectManager = {
     /**
      * Create a new project
      */
-    async createProject({ name, surveyId, criteria, target, notes, vendors }) {
+    async createProject({ name, surveyId, criteria, target, notes }) {
         const project = {
             id: this.generateId(),
             name: name || 'Untitled Project',
@@ -309,8 +313,7 @@ const ProjectManager = {
             criteria: criteria || '',
             target: parseInt(target) || 0,
             notes: notes || '',
-            quickNotes: '',  // Quick notes for Filter & Batch
-            vendors: vendors || [],     // Array of { name, url, note }
+            vendors: [],
             quotas: [],
             lastQuotaFetch: null,
             createdAt: new Date().toISOString(),
@@ -445,11 +448,18 @@ const ProjectManager = {
         }
 
         try {
-            // Use AlchemerAPI.getQuotas() which calls our server-side proxy (avoids CORS)
+            // Use AlchemerAPI to fetch quotas (uses CORS proxy internally)
             const surveyId = project.surveyId;
-            const rawQuotas = await AlchemerAPI.getQuotas(surveyId);
+            const quotasUrl = AlchemerAPI.buildUrl(`/survey/${surveyId}/quotas`);
+            const result = await AlchemerAPI.fetchWithProxy(quotasUrl);
 
-            // Parse quota data - each quota has: id, name, description, responses (count), limit
+            if (!result.result_ok && !result.success) {
+                throw new Error(result.error || 'Failed to fetch quotas');
+            }
+
+            // Parse quota data - API returns { result_ok, quotas: [...] }
+            // Each quota has: id, name, description, responses (count), limit, distributed
+            const rawQuotas = result.quotas || result.data || [];
             const quotas = rawQuotas.map(q => ({
                 id: q.id,
                 name: q.name || `Quota ${q.id}`,
@@ -461,22 +471,11 @@ const ProjectManager = {
                 isComplete: (parseInt(q.responses) || 0) >= (parseInt(q.limit) || 0)
             }));
 
-            // Update local project cache IMMEDIATELY for UI to display
-            const index = this.projects.findIndex(p => p.id === projectId);
-            if (index >= 0) {
-                this.projects[index].quotas = quotas;
-                this.projects[index].lastQuotaFetch = new Date().toISOString();
-                this.projects[index].updatedAt = new Date().toISOString();
-            }
-
-            // Also save to server (async, don't block UI)
-            this.updateProjectOnServer(projectId, {
+            // Update project with quota data
+            await this.updateProject(projectId, {
                 quotas: quotas,
                 lastQuotaFetch: new Date().toISOString()
-            }).catch(e => console.warn('Failed to save quotas to server:', e));
-
-            // Save to localStorage
-            this.saveToLocalStorage();
+            });
 
             return {
                 success: true,
@@ -494,7 +493,6 @@ const ProjectManager = {
 
     /**
      * Get quota summary for a project
-     * Uses TOTAL quota to calculate: completed = TOTAL.count, remaining = target (from name) - count
      */
     getQuotaSummary(projectId) {
         const project = this.getProject(projectId);
@@ -502,38 +500,10 @@ const ProjectManager = {
             return null;
         }
 
-        // Find TOTAL quota (name starts with "TOTAL")
-        const totalQuota = project.quotas.find(q => q.name && q.name.toUpperCase().startsWith('TOTAL'));
-
-        let totalCompleted = 0;
-        let totalLimit = 0;
-        let totalRemaining = 0;
-
-        if (totalQuota) {
-            // Get completed from TOTAL quota's count
-            totalCompleted = totalQuota.count || 0;
-
-            // Extract target number from name (e.g., "TOTAL 250*" -> 250)
-            const nameMatch = totalQuota.name.match(/TOTAL\s*(\d+)/i);
-            if (nameMatch) {
-                totalLimit = parseInt(nameMatch[1]) || 0;
-                totalRemaining = Math.max(0, totalLimit - totalCompleted);
-            } else {
-                // Fallback to quota's own limit/remaining
-                totalLimit = totalQuota.limit || 0;
-                totalRemaining = totalQuota.remaining || 0;
-            }
-        } else {
-            // Fallback: sum all quotas if no TOTAL quota found
-            totalLimit = project.quotas.reduce((sum, q) => sum + q.limit, 0);
-            totalCompleted = project.quotas.reduce((sum, q) => sum + q.count, 0);
-            totalRemaining = project.quotas.reduce((sum, q) => sum + q.remaining, 0);
-        }
-
         return {
-            totalLimit,
-            totalCompleted,
-            totalRemaining,
+            totalLimit: project.quotas.reduce((sum, q) => sum + q.limit, 0),
+            totalCompleted: project.quotas.reduce((sum, q) => sum + q.count, 0),
+            totalRemaining: project.quotas.reduce((sum, q) => sum + q.remaining, 0),
             quotaCount: project.quotas.length,
             lastFetch: project.lastQuotaFetch
         };

@@ -230,36 +230,6 @@ const AlchemerAPI = {
     },
 
     /**
-     * Get survey quotas using server-side proxy (avoids CORS issues)
-     * @param {string} surveyId - Survey ID
-     */
-    async getQuotas(surveyId) {
-        if (!this.isConfigured()) {
-            throw new Error('API credentials not configured');
-        }
-
-        const sid = surveyId || this.config.surveyId;
-        if (!sid) {
-            throw new Error('Survey ID is required');
-        }
-
-        // Use our server-side proxy endpoint to avoid CORS
-        const proxyUrl = `/api/alchemer/quotas?surveyId=${sid}&api_token=${encodeURIComponent(this.config.apiToken)}&api_token_secret=${encodeURIComponent(this.config.apiSecret)}`;
-
-        console.log('Fetching quotas via server proxy for survey:', sid);
-
-        const response = await fetch(proxyUrl);
-        const data = await response.json();
-
-        if (!response.ok || !data.result_ok) {
-            throw new Error(data.error || data.message || 'Failed to fetch quotas');
-        }
-
-        // Return the quota data in expected format
-        return data.data || [];
-    },
-
-    /**
      * Get survey responses with pagination
      * @param {string} surveyId - Survey ID
      * @param {Object} options - Options like filter, page, resultsperpage
