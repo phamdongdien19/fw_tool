@@ -2766,7 +2766,29 @@ function renderProjectInfoPanel() {
             </div>
             <div class="project-info-panel-body" id="projectInfoBody">
                 <div class="project-info-grid">
-                    <!-- Left Column: General Info -->
+                    <!-- Left Column: Priority & Quota (Fixed Width) -->
+                    <div class="project-info-right">
+                        ${suggestionsHtml}
+                        
+                        ${summary ? `
+                            <div class="quota-summary-mini" style="margin-top: 0;">
+                                <div class="quota-headline" onclick="toggleQuotaDetails('infoPanel')" style="cursor: pointer;">
+                                    <strong>📊 Quota:</strong>
+                                    <span class="quota-total">${summary.totalCompleted}/${summary.totalLimit}</span>
+                                    <span class="quota-remaining">(còn ${summary.totalRemaining})</span>
+                                    ${quotas.length > 0 ? `<span class="quota-expand-btn" id="quotaExpandBtnInfo">${showCollapsed ? '▶' : '▼'}</span>` : ''}
+                                </div>
+                                <div class="quota-progress-mini">
+                                    <div class="quota-bar-full" style="width: ${Math.min(100, Math.round((summary.totalCompleted / summary.totalLimit) * 100))}%"></div>
+                                </div>
+                                <div class="quota-details-mini ${showCollapsed ? 'collapsed' : ''}" id="quotaDetailsInfo">
+                                    ${quotaDetailsHtml}
+                                </div>
+                            </div>
+                        ` : '<div class="info-line"><em>Chưa có dữ liệu quota</em></div>'}
+                    </div>
+
+                    <!-- Right Column: General Info (Flexible) -->
                     <div class="project-info-left">
                         ${activeProject.criteria ? `<div class="info-line"><strong>📌 Tiêu chí:</strong> ${activeProject.criteria}</div>` : ''}
                         
@@ -2793,28 +2815,6 @@ function renderProjectInfoPanel() {
                         </div>
                         
                         ${saveButtonHtml}
-                    </div>
-
-                    <!-- Right Column: Priority & Quota -->
-                    <div class="project-info-right">
-                        ${suggestionsHtml}
-                        
-                        ${summary ? `
-                            <div class="quota-summary-mini" style="margin-top: 0;">
-                                <div class="quota-headline" onclick="toggleQuotaDetails('infoPanel')" style="cursor: pointer;">
-                                    <strong>📊 Quota:</strong>
-                                    <span class="quota-total">${summary.totalCompleted}/${summary.totalLimit}</span>
-                                    <span class="quota-remaining">(còn ${summary.totalRemaining})</span>
-                                    ${quotas.length > 0 ? `<span class="quota-expand-btn" id="quotaExpandBtnInfo">${showCollapsed ? '▶' : '▼'}</span>` : ''}
-                                </div>
-                                <div class="quota-progress-mini">
-                                    <div class="quota-bar-full" style="width: ${Math.min(100, Math.round((summary.totalCompleted / summary.totalLimit) * 100))}%"></div>
-                                </div>
-                                <div class="quota-details-mini ${showCollapsed ? 'collapsed' : ''}" id="quotaDetailsInfo">
-                                    ${quotaDetailsHtml}
-                                </div>
-                            </div>
-                        ` : '<div class="info-line"><em>Chưa có dữ liệu quota</em></div>'}
                     </div>
                 </div>
             </div>
