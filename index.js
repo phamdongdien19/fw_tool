@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupExportTabs();
     setupSearch();
 
-    // Initial render - switch to default Projects view
-    switchView('projects');
+    // Initial render - switch to view from URL hash or default to Projects
+    switchView(getInitialView());
     UIRenderer.renderConfig();
 
     console.log('FW Tools initialized successfully');
@@ -102,9 +102,29 @@ function setupNavigation() {
             switchView(view);
         });
     });
+
+    // Listen for URL hash changes (browser back/forward)
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.slice(1); // Remove #
+        if (hash && hash !== currentView) {
+            switchView(hash, false); // Don't update hash again
+        }
+    });
 }
 
-function switchView(viewName) {
+// Get initial view from URL hash or default to 'projects'
+function getInitialView() {
+    const hash = window.location.hash.slice(1);
+    const validViews = ['dashboard', 'import', 'urlImport', 'projects', 'data', 'export', 'config'];
+    return validViews.includes(hash) ? hash : 'projects';
+}
+
+function switchView(viewName, updateHash = true) {
+    // Update URL hash for shareable links
+    if (updateHash && window.location.hash !== `#${viewName}`) {
+        window.history.pushState(null, '', `#${viewName}`);
+    }
+
     // Update nav
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.toggle('active', item.dataset.view === viewName);
