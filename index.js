@@ -2504,15 +2504,10 @@ function renderProjectInfoPanel() {
 
     const summary = ProjectManager.getQuotaSummary(activeProject.id);
     const quotas = activeProject.quotas || [];
-    const showCollapsed = quotas.length > 3; // Collapse if more than 3 quotas
-    const vendors = activeProject.vendors || [];
+    const showCollapsed = quotas.length > 3;
 
-    // Available vendors
-    const availableVendors = [
-        { id: 'purespectrum', name: 'PureSpectrum', logo: 'assets/icons/purespectrum.png' },
-        { id: 'cint', name: 'Cint', logo: 'assets/icons/cint.png' },
-        { id: 'other', name: 'Khác', logo: null }
-    ];
+    // Get vendor links (object with vendor id as key, link as value)
+    const vendorLinks = activeProject.vendorLinks || {};
 
     // Build quota details HTML
     let quotaDetailsHtml = '';
@@ -2532,17 +2527,34 @@ function renderProjectInfoPanel() {
         }).join('');
     }
 
-    // Build vendor checkboxes HTML
-    const vendorCheckboxesHtml = availableVendors.map(v => {
-        const checked = vendors.includes(v.id) ? 'checked' : '';
-        const logoHtml = v.logo ? `<img src="${v.logo}" alt="${v.name}" style="height: 18px; width: auto; vertical-align: middle; margin-right: 4px;">` : '';
+    // Build vendor rows with logo, link input, and hyperlink button
+    const buildVendorRow = (id, name, logo, link) => {
+        const logoHtml = logo
+            ? `<a href="${link || '#'}" target="_blank" style="display: inline-flex; align-items: center; ${link ? '' : 'pointer-events: none; opacity: 0.5;'}">
+                <img src="${logo}" alt="${name}" style="height: 22px; width: auto; cursor: ${link ? 'pointer' : 'default'};" title="${link ? 'Mở link ' + name : 'Chưa có link'}">
+               </a>`
+            : `<span style="font-weight: 500; min-width: 80px;">${name}</span>`;
+
         return `
-            <label class="vendor-checkbox" style="display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; cursor: pointer;">
-                <input type="checkbox" name="projectVendor" value="${v.id}" ${checked} onchange="updateProjectVendors()">
-                ${logoHtml}<span>${v.name}</span>
-            </label>
+            <div class="vendor-row" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <div style="min-width: 100px;">${logoHtml}</div>
+                <input type="text" 
+                    id="vendorLink_${id}" 
+                    class="form-control form-control-sm" 
+                    style="flex: 1; font-size: 12px;" 
+                    placeholder="Nhập link ${name}..." 
+                    value="${link || ''}"
+                    onchange="markVendorChanged()">
+                ${link ? `<a href="${link}" target="_blank" class="btn btn-xs btn-outline" title="Mở link">🔗</a>` : ''}
+            </div>
         `;
-    }).join('');
+    };
+
+    const vendorsHtml = `
+        ${buildVendorRow('purespectrum', 'PureSpectrum', 'assets/icons/purespectrum.png', vendorLinks.purespectrum)}
+        ${buildVendorRow('cint', 'Cint', 'assets/icons/cint.png', vendorLinks.cint)}
+        ${buildVendorRow('other', 'Khác', null, vendorLinks.other)}
+    `;
 
     container.innerHTML = `
         <div class="project-info-panel" style="max-width: 600px;">
@@ -2560,15 +2572,15 @@ function renderProjectInfoPanel() {
                 <div style="margin: 8px 0;">
                     <textarea id="projectQuickNotes" class="form-control form-control-sm" rows="2" 
                         placeholder="Nhập ghi chú nhanh..." style="resize: vertical; font-size: 12px;"
-                        onchange="updateProjectQuickNotes()">${activeProject.notes || ''}</textarea>
+                        onchange="markVendorChanged()">${activeProject.notes || ''}</textarea>
                 </div>
                 
-                <!-- Vendors -->
-                <div class="info-line" style="margin-top: 8px;">
+                <!-- Vendors with Links -->
+                <div class="info-line" style="margin-top: 12px;">
                     <strong>🏢 Sample Vendors:</strong>
                 </div>
-                <div style="margin: 8px 0; display: flex; flex-wrap: wrap; gap: 4px;">
-                    ${vendorCheckboxesHtml}
+                <div style="margin: 8px 0;">
+                    ${vendorsHtml}
                 </div>
                 
                 <!-- Save Button -->
@@ -2598,21 +2610,13 @@ function renderProjectInfoPanel() {
     `;
 }
 
-// Update quick notes (local only, requires save)
-function updateProjectQuickNotes() {
-    // Just mark that there are unsaved changes
+// Mark vendor section as having unsaved changes
+function markVendorChanged() {
     const statusEl = document.getElementById('projectInfoSaveStatus');
     if (statusEl) statusEl.textContent = '⚠️ Chưa lưu';
 }
 
-// Update vendors (local only, requires save)
-function updateProjectVendors() {
-    // Just mark that there are unsaved changes
-    const statusEl = document.getElementById('projectInfoSaveStatus');
-    if (statusEl) statusEl.textContent = '⚠️ Chưa lưu';
-}
-
-// Save project info (notes + vendors) to server
+// Save project info (notes + vendorLinks) to server
 async function saveProjectInfoNow() {
     const activeProject = ProjectManager.getActiveProject();
     if (!activeProject) {
@@ -2627,15 +2631,21 @@ async function saveProjectInfoNow() {
     const notesEl = document.getElementById('projectQuickNotes');
     const notes = notesEl ? notesEl.value.trim() : activeProject.notes;
 
-    // Get selected vendors
-    const vendorCheckboxes = document.querySelectorAll('input[name="projectVendor"]:checked');
-    const vendors = Array.from(vendorCheckboxes).map(cb => cb.value);
+    // Get vendor links
+    const vendorLinks = {
+        purespectrum: (document.getElementById('vendorLink_purespectrum')?.value || '').trim(),
+        cint: (document.getElementById('vendorLink_cint')?.value || '').trim(),
+        other: (document.getElementById('vendorLink_other')?.value || '').trim()
+    };
 
     try {
-        await ProjectManager.updateProject(activeProject.id, { notes, vendors });
+        await ProjectManager.updateProject(activeProject.id, { notes, vendorLinks });
 
         if (statusEl) statusEl.textContent = '✅ Đã lưu';
         UIRenderer.showToast('Đã lưu thông tin project', 'success');
+
+        // Re-render to update hyperlinks
+        renderProjectInfoPanel();
 
         // Clear status after 2s
         setTimeout(() => {
@@ -2649,8 +2659,7 @@ async function saveProjectInfoNow() {
 }
 
 // Make functions global
-window.updateProjectQuickNotes = updateProjectQuickNotes;
-window.updateProjectVendors = updateProjectVendors;
+window.markVendorChanged = markVendorChanged;
 window.saveProjectInfoNow = saveProjectInfoNow;
 
 function toggleQuotaDetails(location) {
