@@ -443,18 +443,11 @@ const ProjectManager = {
         }
 
         try {
-            // Use AlchemerAPI to fetch quotas (uses CORS proxy internally)
+            // Use AlchemerAPI.getQuotas() which calls our server-side proxy (avoids CORS)
             const surveyId = project.surveyId;
-            const quotasUrl = AlchemerAPI.buildUrl(`/survey/${surveyId}/quotas`);
-            const result = await AlchemerAPI.fetchWithProxy(quotasUrl);
+            const rawQuotas = await AlchemerAPI.getQuotas(surveyId);
 
-            if (!result.result_ok && !result.success) {
-                throw new Error(result.error || 'Failed to fetch quotas');
-            }
-
-            // Parse quota data - API returns { result_ok, quotas: [...] }
-            // Each quota has: id, name, description, responses (count), limit, distributed
-            const rawQuotas = result.quotas || result.data || [];
+            // Parse quota data - each quota has: id, name, description, responses (count), limit
             const quotas = rawQuotas.map(q => ({
                 id: q.id,
                 name: q.name || `Quota ${q.id}`,
