@@ -48,6 +48,24 @@ document.addEventListener('DOMContentLoaded', () => {
     UIRenderer.renderDashboard();
     UIRenderer.renderConfig();
 
+    // Restore active project if exists
+    setTimeout(async () => {
+        if (typeof ProjectManager !== 'undefined') {
+            const lastId = localStorage.getItem('fw_tools_active_project_id');
+            if (lastId) {
+                // Ensure projects are loaded
+                await ProjectManager.syncFromServer();
+                const project = ProjectManager.getProject(lastId);
+                if (project) {
+                    selectedProjectId = lastId; // Update global var
+                    ProjectManager.setActiveProject(lastId);
+                    renderProjectInfoPanel();
+                    console.log('Restored active project:', project.name);
+                }
+            }
+        }
+    }, 1000);
+
     console.log('FW Tools initialized successfully');
 });
 
@@ -2584,6 +2602,9 @@ function setAsActiveProject() {
     if (!project) return;
 
     ProjectManager.setActiveProject(selectedProjectId);
+    // Save to localStorage for restore
+    localStorage.setItem('fw_tools_active_project_id', selectedProjectId);
+
     renderProjectsList();
     UIRenderer.showToast('Đã set project active', 'success');
 
@@ -2602,7 +2623,13 @@ function renderProjectInfoPanel() {
 
     const activeProject = ProjectManager.getActiveProject();
     if (!activeProject) {
-        container.innerHTML = '';
+        container.innerHTML = `
+            <div class="project-info-panel" style="max-width: 600px; padding: 20px; text-align: center; color: #666; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <p>⚠️ Chưa chọn Project</p>
+                <div style="font-size: 13px; margin-bottom: 12px;">Vui lòng chọn một project để xem Quota & Vendors.</div>
+                <button class="btn btn-sm btn-primary" onclick="switchView('projects')">Danh sách Project</button>
+            </div>
+        `;
         return;
     }
 
