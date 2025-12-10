@@ -3295,3 +3295,138 @@ textarea.form-control {
         max-width: 100px;
     }
 }
+
+/* ===== Fieldwork Solution Section ===== */
+.fieldwork-section {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.vendor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vendor-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+    transition: all var(--transition-fast);
+}
+
+.vendor-item:hover {
+    background: var(--bg-hover);
+}
+
+.vendor-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.vendor-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.vendor-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-primary);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vendor-name:hover {
+    text-decoration: underline;
+}
+
+.vendor-note {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===== Quick Notes Section ===== */
+.quick-notes-section {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.quick-notes-input {
+    width: 100%;
+    min-height: 60px;
+    max-height: 120px;
+    padding: 10px;
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    resize: vertical;
+    transition: border-color var(--transition-fast);
+}
+
+.quick-notes-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.quick-notes-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* ===== Vendor Input Section in Modal ===== */
+.vendor-inputs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vendor-input-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr 2fr auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.vendor-input-row input {
+    padding: 8px;
+    font-size: 13px;
+}
+
+.vendor-remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 8px;
+}
+
+.vendor-remove-btn:hover {
+    color: var(--color-danger);
+}
+
+.add-vendor-btn {
+    margin-top: 8px;
+}

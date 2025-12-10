@@ -301,7 +301,7 @@ const ProjectManager = {
     /**
      * Create a new project
      */
-    async createProject({ name, surveyId, criteria, target, notes }) {
+    async createProject({ name, surveyId, criteria, target, notes, vendors }) {
         const project = {
             id: this.generateId(),
             name: name || 'Untitled Project',
@@ -309,6 +309,8 @@ const ProjectManager = {
             criteria: criteria || '',
             target: parseInt(target) || 0,
             notes: notes || '',
+            quickNotes: '',  // Quick notes for Filter & Batch
+            vendors: vendors || [],     // Array of { name, url, note }
             quotas: [],
             lastQuotaFetch: null,
             createdAt: new Date().toISOString(),
@@ -492,6 +494,7 @@ const ProjectManager = {
 
     /**
      * Get quota summary for a project
+     * Uses TOTAL quota to calculate: completed = TOTAL.count, remaining = target (from name) - count
      */
     getQuotaSummary(projectId) {
         const project = this.getProject(projectId);
@@ -499,10 +502,38 @@ const ProjectManager = {
             return null;
         }
 
+        // Find TOTAL quota (name starts with "TOTAL")
+        const totalQuota = project.quotas.find(q => q.name && q.name.toUpperCase().startsWith('TOTAL'));
+
+        let totalCompleted = 0;
+        let totalLimit = 0;
+        let totalRemaining = 0;
+
+        if (totalQuota) {
+            // Get completed from TOTAL quota's count
+            totalCompleted = totalQuota.count || 0;
+
+            // Extract target number from name (e.g., "TOTAL 250*" -> 250)
+            const nameMatch = totalQuota.name.match(/TOTAL\s*(\d+)/i);
+            if (nameMatch) {
+                totalLimit = parseInt(nameMatch[1]) || 0;
+                totalRemaining = Math.max(0, totalLimit - totalCompleted);
+            } else {
+                // Fallback to quota's own limit/remaining
+                totalLimit = totalQuota.limit || 0;
+                totalRemaining = totalQuota.remaining || 0;
+            }
+        } else {
+            // Fallback: sum all quotas if no TOTAL quota found
+            totalLimit = project.quotas.reduce((sum, q) => sum + q.limit, 0);
+            totalCompleted = project.quotas.reduce((sum, q) => sum + q.count, 0);
+            totalRemaining = project.quotas.reduce((sum, q) => sum + q.remaining, 0);
+        }
+
         return {
-            totalLimit: project.quotas.reduce((sum, q) => sum + q.limit, 0),
-            totalCompleted: project.quotas.reduce((sum, q) => sum + q.count, 0),
-            totalRemaining: project.quotas.reduce((sum, q) => sum + q.remaining, 0),
+            totalLimit,
+            totalCompleted,
+            totalRemaining,
             quotaCount: project.quotas.length,
             lastFetch: project.lastQuotaFetch
         };

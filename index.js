@@ -2416,6 +2416,17 @@ async function refreshProjectQuotas() {
 function openProjectModal(editId = null) {
     const project = editId ? ProjectManager.getProject(editId) : null;
     const isEdit = !!project;
+    const vendors = isEdit && project.vendors ? project.vendors : [];
+
+    // Build vendors HTML
+    const vendorsHtml = vendors.map((v, i) => `
+        <div class="vendor-input-row" data-vendor-index="${i}">
+            <input type="text" class="form-control vendor-name-input" placeholder="Tên vendor" value="${v.name || ''}">
+            <input type="text" class="form-control vendor-url-input" placeholder="URL" value="${v.url || ''}">
+            <input type="text" class="form-control vendor-note-input" placeholder="Ghi chú" value="${v.note || ''}">
+            <button type="button" class="vendor-remove-btn" onclick="removeVendorRow(this)">✕</button>
+        </div>
+    `).join('');
 
     const modalBody = `
         <div class="form-group">
@@ -2443,6 +2454,15 @@ function openProjectModal(editId = null) {
             <textarea id="projectNotesInput" class="form-control" rows="2" 
                 placeholder="VD: Ưu tiên nhóm 25-35 tuổi">${isEdit ? project.notes : ''}</textarea>
         </div>
+        <div class="form-group">
+            <label>🔗 Vendor Links (Fieldwork)</label>
+            <div class="vendor-inputs-container" id="vendorInputsContainer">
+                ${vendorsHtml}
+            </div>
+            <button type="button" class="btn btn-sm btn-outline add-vendor-btn" onclick="addVendorRow()">
+                + Thêm Vendor
+            </button>
+        </div>
     `;
 
     openModal(
@@ -2452,6 +2472,28 @@ function openProjectModal(editId = null) {
     );
 }
 
+// Add vendor row
+function addVendorRow() {
+    const container = document.getElementById('vendorInputsContainer');
+    const div = document.createElement('div');
+    div.className = 'vendor-input-row';
+    div.innerHTML = `
+        <input type="text" class="form-control vendor-name-input" placeholder="Tên vendor (VD: Cint)">
+        <input type="text" class="form-control vendor-url-input" placeholder="URL">
+        <input type="text" class="form-control vendor-note-input" placeholder="Ghi chú">
+        <button type="button" class="vendor-remove-btn" onclick="removeVendorRow(this)">✕</button>
+    `;
+    container.appendChild(div);
+}
+
+// Remove vendor row
+function removeVendorRow(btn) {
+    btn.closest('.vendor-input-row').remove();
+}
+
+window.addVendorRow = addVendorRow;
+window.removeVendorRow = removeVendorRow;
+
 async function saveProjectFromModal(editId = null) {
     const name = document.getElementById('projectNameInput').value.trim();
     const surveyId = document.getElementById('projectSurveyIdInput').value.trim();
@@ -2459,16 +2501,24 @@ async function saveProjectFromModal(editId = null) {
     const criteria = document.getElementById('projectCriteriaInput').value.trim();
     const notes = document.getElementById('projectNotesInput').value.trim();
 
+    // Collect vendors from input rows
+    const vendorRows = document.querySelectorAll('.vendor-input-row');
+    const vendors = Array.from(vendorRows).map(row => ({
+        name: row.querySelector('.vendor-name-input')?.value.trim() || '',
+        url: row.querySelector('.vendor-url-input')?.value.trim() || '',
+        note: row.querySelector('.vendor-note-input')?.value.trim() || ''
+    })).filter(v => v.name || v.url); // Only keep non-empty vendors
+
     if (!name) {
         UIRenderer.showToast('Vui lòng nhập tên project', 'warning');
         return;
     }
 
     if (editId) {
-        await ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes });
+        await ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes, vendors });
         UIRenderer.showToast('Đã cập nhật project', 'success');
     } else {
-        const newProject = await ProjectManager.createProject({ name, surveyId, target, criteria, notes });
+        const newProject = await ProjectManager.createProject({ name, surveyId, target, criteria, notes, vendors });
         selectedProjectId = newProject.id;
         UIRenderer.showToast('Đã tạo project mới', 'success');
     }
@@ -2537,6 +2587,8 @@ function renderProjectInfoPanel() {
 
     const summary = ProjectManager.getQuotaSummary(activeProject.id);
     const quotas = activeProject.quotas || [];
+    const vendors = activeProject.vendors || [];
+    const quickNotes = activeProject.quickNotes || '';
     const showCollapsed = quotas.length > 3; // Collapse if more than 3 quotas
 
     // Build quota details HTML
@@ -2555,6 +2607,27 @@ function renderProjectInfoPanel() {
                 </div>
             `;
         }).join('');
+    }
+
+    // Build vendors HTML
+    let vendorsHtml = '';
+    if (vendors.length > 0) {
+        vendorsHtml = `
+            <div class="fieldwork-section">
+                <div class="section-title">🔗 Fieldwork Solution</div>
+                <div class="vendor-list">
+                    ${vendors.map((v, i) => `
+                        <div class="vendor-item">
+                            <span class="vendor-icon">${getVendorIcon(v.name)}</span>
+                            <div class="vendor-info">
+                                <a href="${v.url}" target="_blank" class="vendor-name">${v.name}</a>
+                                ${v.note ? `<span class="vendor-note">${v.note}</span>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
     }
 
     container.innerHTML = `
@@ -2582,10 +2655,50 @@ function renderProjectInfoPanel() {
                         </div>
                     </div>
                 ` : '<div class="info-line"><em>Chưa có dữ liệu quota</em></div>'}
+                ${vendorsHtml}
+                <div class="quick-notes-section">
+                    <div class="section-title">📝 Ghi chú nhanh</div>
+                    <textarea class="quick-notes-input" id="quickNotesInput" 
+                        placeholder="Ghi chú cho dự án..." 
+                        onblur="saveQuickNotes()">${quickNotes}</textarea>
+                </div>
             </div>
         </div>
     `;
 }
+
+// Get vendor icon based on name
+function getVendorIcon(vendorName) {
+    const name = (vendorName || '').toLowerCase();
+    if (name.includes('cint')) return '🔵';
+    if (name.includes('purespectrum') || name.includes('pure')) return '🟣';
+    if (name.includes('dynata')) return '🟠';
+    if (name.includes('fulcrum')) return '🟢';
+    if (name.includes('toluna')) return '🔴';
+    return '🔘';
+}
+
+// Save quick notes
+async function saveQuickNotes() {
+    const textarea = document.getElementById('quickNotesInput');
+    if (!textarea) return;
+
+    const activeProject = ProjectManager.getActiveProject();
+    if (!activeProject) return;
+
+    const newNotes = textarea.value;
+    if (newNotes !== activeProject.quickNotes) {
+        try {
+            await ProjectManager.updateProject(activeProject.id, { quickNotes: newNotes });
+            console.log('Quick notes saved');
+        } catch (e) {
+            console.error('Failed to save quick notes:', e);
+        }
+    }
+}
+
+window.saveQuickNotes = saveQuickNotes;
+window.getVendorIcon = getVendorIcon;
 
 function toggleQuotaDetails(location) {
     const detailsId = location === 'infoPanel' ? 'quotaDetailsInfo' : 'quotaDetailsProjects';
