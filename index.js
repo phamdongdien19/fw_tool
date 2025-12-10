@@ -2338,7 +2338,7 @@ function renderProjectQuotas(project) {
                 ${hiddenItems.map(renderItem).join('')}
             </div>
             <div class="quota-action-row" style="text-align: center; margin-top: 8px;">
-                <button class="btn btn-sm btn-link" id="quotaExpandBtnProjects" onclick="toggleQuotaDetails('projects')" style="text-decoration: none; color: var(--primary-color);">
+                <button class="btn btn-sm btn-outline" id="quotaExpandBtnProjects" onclick="toggleQuotaDetails('projects')">
                     ▼ Xem thêm (${hiddenItems.length})
                 </button>
             </div>
@@ -2347,9 +2347,31 @@ function renderProjectQuotas(project) {
 
     quotaList.innerHTML = html;
 
-    // Summary
-    const totalCompleted = project.quotas.reduce((s, q) => s + q.count, 0);
-    const totalRemaining = project.quotas.reduce((s, q) => s + q.remaining, 0);
+    // Summary - Find TOTAL quota and extract target from name
+    // e.g., "TOTAL 250" -> target = 250, completed = count, remaining = 250 - count
+    const totalQuota = project.quotas.find(q => q.name && q.name.toUpperCase().startsWith('TOTAL'));
+
+    let totalCompleted = 0;
+    let totalRemaining = 0;
+
+    if (totalQuota) {
+        // Get completed from TOTAL quota's count
+        totalCompleted = totalQuota.count || 0;
+
+        // Extract target number from name (e.g., "TOTAL 250" -> 250)
+        const nameMatch = totalQuota.name.match(/TOTAL\s*(\d+)/i);
+        if (nameMatch) {
+            const target = parseInt(nameMatch[1]) || 0;
+            totalRemaining = Math.max(0, target - totalCompleted);
+        } else {
+            // Fallback to quota's own remaining if no number in name
+            totalRemaining = totalQuota.remaining || 0;
+        }
+    } else {
+        // Fallback: sum all quotas if no TOTAL quota found
+        totalCompleted = project.quotas.reduce((s, q) => s + q.count, 0);
+        totalRemaining = project.quotas.reduce((s, q) => s + q.remaining, 0);
+    }
 
     document.getElementById('quotaTotalCompleted').textContent = totalCompleted;
     document.getElementById('quotaTotalRemaining').textContent = totalRemaining;
