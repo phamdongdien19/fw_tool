@@ -1451,18 +1451,65 @@ textarea.form-control {
     }
 }
 
+/* ===== Data View Layout */
+.data-view-layout {
+    display: flex;
+    gap: 16px;
+    height: 100%;
+    align-items: flex-start;
+}
+
+.data-view-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Prevent overflow */
+    gap: 12px;
+}
+
+.data-view-sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+}
+
+/* Adjust project info panel for sidebar */
+.project-info-panel {
+    max-width: 100% !important;
+    /* Override inline style */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .data-view-layout {
+        flex-direction: column;
+    }
+
+    .data-view-sidebar {
+        width: 100%;
+        position: static;
+        margin-bottom: 16px;
+    }
+}
+
 /* ===== Modal ===== */
 .modal-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     z-index: 1000;
     opacity: 0;
     visibility: hidden;
     transition: all var(--transition);
+    animation: fadeIn 0.2s ease-out;
 }
 
 .modal-overlay.active {

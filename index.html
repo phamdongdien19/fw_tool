@@ -699,421 +699,442 @@
 
                 <!-- Data View (Filter & Batch) -->
                 <section class="view" id="dataView">
-                    <!-- Project Info Panel (shows active project criteria) -->
-                    <div id="projectInfoPanelContainer"></div>
-
-                    <div class="data-toolbar">
-                        <div class="toolbar-left">
-                            <div class="filter-section">
-                                <button class="btn btn-icon" id="filterToggle" title="Toggle Filters">
-                                    🔍
-                                </button>
-                                <span class="filter-status" id="filterStatus">No filter</span>
-                            </div>
-                            <div class="search-box">
-                                <input type="text" id="searchInput" placeholder="Tìm kiếm..." class="form-control">
-                            </div>
-                            <button class="btn btn-sm btn-secondary" onclick="shuffleData()" title="Shuffle Rows">
-                                <img src="assets/icons/cat.png" alt="" class="btn-icon-img"> 🔀 Shuffle
-                            </button>
-                            <div class="column-visibility-dropdown">
-                                <button class="btn btn-sm btn-outline" id="columnVisibilityBtn"
-                                    title="Column Visibility">
-                                    👁️ Columns
-                                </button>
-                                <div class="column-visibility-panel" id="columnVisibilityPanel" style="display: none;">
-                                    <div class="panel-header">
-                                        <span>Hiển thị cột</span>
-                                        <button class="btn btn-xs btn-outline"
-                                            onclick="toggleAllColumns(true)">All</button>
-                                        <button class="btn btn-xs btn-outline"
-                                            onclick="toggleAllColumns(false)">None</button>
+                    <div class="data-view-layout">
+                        <div class="data-view-main">
+                            <!-- Main content area -->
+                            <div class="data-toolbar">
+                                <div class="toolbar-left">
+                                    <div class="filter-section">
+                                        <button class="btn btn-icon" id="filterToggle" title="Toggle Filters">
+                                            🔍
+                                        </button>
+                                        <span class="filter-status" id="filterStatus">No filter</span>
                                     </div>
-                                    <div class="column-list" id="columnVisibilityList"></div>
+                                    <div class="search-box">
+                                        <input type="text" id="searchInput" placeholder="Tìm kiếm..."
+                                            class="form-control">
+                                    </div>
+                                    <button class="btn btn-sm btn-secondary" onclick="shuffleData()"
+                                        title="Shuffle Rows">
+                                        <img src="assets/icons/cat.png" alt="" class="btn-icon-img"> 🔀 Shuffle
+                                    </button>
+                                    <div class="column-visibility-dropdown">
+                                        <button class="btn btn-sm btn-outline" id="columnVisibilityBtn"
+                                            title="Column Visibility">
+                                            👁️ Columns
+                                        </button>
+                                        <div class="column-visibility-panel" id="columnVisibilityPanel"
+                                            style="display: none;">
+                                            <div class="panel-header">
+                                                <span>Hiển thị cột</span>
+                                                <button class="btn btn-xs btn-outline"
+                                                    onclick="toggleAllColumns(true)">All</button>
+                                                <button class="btn btn-xs btn-outline"
+                                                    onclick="toggleAllColumns(false)">None</button>
+                                            </div>
+                                            <div class="column-list" id="columnVisibilityList"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="toolbar-right">
+                                    <span class="row-count">Showing <span id="visibleCount">0</span> / <span
+                                            id="totalCount">0</span></span>
+                                    <button class="btn btn-icon" onclick="refreshData()" title="Refresh">🔄</button>
                                 </div>
                             </div>
-                        </div>
-                        <div class="toolbar-right">
-                            <span class="row-count">Showing <span id="visibleCount">0</span> / <span
-                                    id="totalCount">0</span></span>
-                            <button class="btn btn-icon" onclick="refreshData()" title="Refresh">🔄</button>
-                        </div>
-                    </div>
 
-                    <div class="filter-panel" id="filterPanel" style="display: none;">
-                        <div class="filter-builder">
-                            <div class="filter-conditions" id="filterConditions">
-                                <!-- Filter conditions will be added here -->
-                            </div>
-                            <div class="filter-actions">
-                                <button class="btn btn-sm btn-secondary" onclick="addFilterCondition()">+ Add
-                                    Condition</button>
-                                <button class="btn btn-sm btn-primary" onclick="applyFilters()">Apply</button>
-                                <button class="btn btn-sm btn-outline" onclick="clearFilters()">Clear All</button>
-                            </div>
-                        </div>
-                        <div class="filter-presets">
-                            <label>Preset:</label>
-                            <select id="filterPreset" class="form-control form-control-sm">
-                                <option value="">-- Select --</option>
-                                <option value="unmarked">Chưa đánh batch</option>
-                                <option value="sms-pending">SMS chưa gửi</option>
-                                <option value="email-pending">Email chưa gửi</option>
-                            </select>
-                            <button class="btn btn-sm btn-outline" onclick="saveFilterPreset()">Save</button>
-                        </div>
-                    </div>
-
-                    <div class="data-table-container">
-                        <table class="data-table" id="dataTable">
-                            <thead id="dataTableHead"></thead>
-                            <tbody id="dataTableBody"></tbody>
-                        </table>
-                        <div class="empty-state" id="dataEmptyState">
-                            <img src="assets/icons/mantis.png" alt="" class="empty-icon-img">
-                            <p>Chưa có dữ liệu. Vui lòng import file.</p>
-                            <button class="btn btn-primary" onclick="switchView('import')">Import Data</button>
-                        </div>
-                    </div>
-
-                    <!-- Pagination -->
-                    <div class="pagination-controls" id="paginationControls">
-                        <div class="pagination-info">
-                            <span>Rows per page:</span>
-                            <select id="rowsPerPage" class="form-control form-control-sm"
-                                onchange="changeRowsPerPage(this.value)">
-                                <option value="25" selected>25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                                <option value="200">200</option>
-                                <option value="500">500</option>
-                            </select>
-                            <span class="page-info" id="pageInfo">Page 1 of 1</span>
-                        </div>
-                        <div class="pagination-buttons">
-                            <button class="btn btn-sm btn-outline" onclick="goToPage('first')" id="pageFirst">⏮️
-                                First</button>
-                            <button class="btn btn-sm btn-outline" onclick="goToPage('prev')" id="pagePrev">◀️
-                                Prev</button>
-                            <span class="page-numbers" id="pageNumbers"></span>
-                            <button class="btn btn-sm btn-outline" onclick="goToPage('next')" id="pageNext">Next
-                                ▶️</button>
-                            <button class="btn btn-sm btn-outline" onclick="goToPage('last')" id="pageLast">Last
-                                ⏭️</button>
-                        </div>
-                    </div>
-
-                    <div class="data-actions">
-                        <div class="batch-actions">
-                            <div class="action-group">
-                                <label>SMS Batch:</label>
-                                <div class="btn-group">
-                                    <button class="btn btn-sms" onclick="markBatch('sms', 500)">Mark 500</button>
-                                    <button class="btn btn-sms" onclick="markBatch('sms', 1000)">Mark 1000</button>
-                                    <button class="btn btn-sms" onclick="markBatchPrompt('sms')">Custom...</button>
+                            <div class="filter-panel" id="filterPanel" style="display: none;">
+                                <div class="filter-builder">
+                                    <div class="filter-conditions" id="filterConditions">
+                                        <!-- Filter conditions will be added here -->
+                                    </div>
+                                    <div class="filter-actions">
+                                        <button class="btn btn-sm btn-secondary" onclick="addFilterCondition()">+ Add
+                                            Condition</button>
+                                        <button class="btn btn-sm btn-primary" onclick="applyFilters()">Apply</button>
+                                        <button class="btn btn-sm btn-outline" onclick="clearFilters()">Clear
+                                            All</button>
+                                    </div>
+                                </div>
+                                <div class="filter-presets">
+                                    <label>Preset:</label>
+                                    <select id="filterPreset" class="form-control form-control-sm">
+                                        <option value="">-- Select --</option>
+                                        <option value="unmarked">Chưa đánh batch</option>
+                                        <option value="sms-pending">SMS chưa gửi</option>
+                                        <option value="email-pending">Email chưa gửi</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline" onclick="saveFilterPreset()">Save</button>
                                 </div>
                             </div>
-                            <div class="action-group">
-                                <label>Email Batch:</label>
-                                <div class="btn-group">
-                                    <button class="btn btn-email" onclick="markBatch('email', 500)">Mark 500</button>
-                                    <button class="btn btn-email" onclick="markBatch('email', 1000)">Mark 1000</button>
-                                    <button class="btn btn-email" onclick="markBatchPrompt('email')">Custom...</button>
+
+                            <div class="data-table-container">
+                                <table class="data-table" id="dataTable">
+                                    <thead id="dataTableHead"></thead>
+                                    <tbody id="dataTableBody"></tbody>
+                                </table>
+                                <div class="empty-state" id="dataEmptyState">
+                                    <img src="assets/icons/mantis.png" alt="" class="empty-icon-img">
+                                    <p>Chưa có dữ liệu. Vui lòng import file.</p>
+                                    <button class="btn btn-primary" onclick="switchView('import')">Import Data</button>
                                 </div>
                             </div>
-                        </div>
-                        <div class="action-group">
-                            <label>Remind SMS:</label>
-                            <div class="btn-group">
-                                <button class="btn btn-sms" onclick="markBatch('remind_sms', 500)">Mark 500</button>
-                                <button class="btn btn-sms" onclick="markBatch('remind_sms', 1000)">Mark 1000</button>
-                                <button class="btn btn-sms" onclick="markBatchPrompt('remind_sms')">Custom...</button>
+
+                            <!-- Pagination -->
+                            <div class="pagination-controls" id="paginationControls">
+                                <div class="pagination-info">
+                                    <span>Rows per page:</span>
+                                    <select id="rowsPerPage" class="form-control form-control-sm"
+                                        onchange="changeRowsPerPage(this.value)">
+                                        <option value="25" selected>25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                        <option value="200">200</option>
+                                        <option value="500">500</option>
+                                    </select>
+                                    <span class="page-info" id="pageInfo">Page 1 of 1</span>
+                                </div>
+                                <div class="pagination-buttons">
+                                    <button class="btn btn-sm btn-outline" onclick="goToPage('first')" id="pageFirst">⏮️
+                                        First</button>
+                                    <button class="btn btn-sm btn-outline" onclick="goToPage('prev')" id="pagePrev">◀️
+                                        Prev</button>
+                                    <span class="page-numbers" id="pageNumbers"></span>
+                                    <button class="btn btn-sm btn-outline" onclick="goToPage('next')" id="pageNext">Next
+                                        ▶️</button>
+                                    <button class="btn btn-sm btn-outline" onclick="goToPage('last')" id="pageLast">Last
+                                        ⏭️</button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="action-group">
-                            <label>Remind Email:</label>
-                            <div class="btn-group">
-                                <button class="btn btn-email" onclick="markBatch('remind_email', 500)">Mark 500</button>
-                                <button class="btn btn-email" onclick="markBatch('remind_email', 1000)">Mark
-                                    1000</button>
-                                <button class="btn btn-email"
-                                    onclick="markBatchPrompt('remind_email')">Custom...</button>
+
+                            <div class="data-actions">
+                                <div class="batch-actions">
+                                    <div class="action-group">
+                                        <label>SMS Batch:</label>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sms" onclick="markBatch('sms', 500)">Mark
+                                                500</button>
+                                            <button class="btn btn-sms" onclick="markBatch('sms', 1000)">Mark
+                                                1000</button>
+                                            <button class="btn btn-sms"
+                                                onclick="markBatchPrompt('sms')">Custom...</button>
+                                        </div>
+                                    </div>
+                                    <div class="action-group">
+                                        <label>Email Batch:</label>
+                                        <div class="btn-group">
+                                            <button class="btn btn-email" onclick="markBatch('email', 500)">Mark
+                                                500</button>
+                                            <button class="btn btn-email" onclick="markBatch('email', 1000)">Mark
+                                                1000</button>
+                                            <button class="btn btn-email"
+                                                onclick="markBatchPrompt('email')">Custom...</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="action-group">
+                                    <label>Remind SMS:</label>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sms" onclick="markBatch('remind_sms', 500)">Mark
+                                            500</button>
+                                        <button class="btn btn-sms" onclick="markBatch('remind_sms', 1000)">Mark
+                                            1000</button>
+                                        <button class="btn btn-sms"
+                                            onclick="markBatchPrompt('remind_sms')">Custom...</button>
+                                    </div>
+                                </div>
+                                <div class="action-group">
+                                    <label>Remind Email:</label>
+                                    <div class="btn-group">
+                                        <button class="btn btn-email" onclick="markBatch('remind_email', 500)">Mark
+                                            500</button>
+                                        <button class="btn btn-email" onclick="markBatch('remind_email', 1000)">Mark
+                                            1000</button>
+                                        <button class="btn btn-email"
+                                            onclick="markBatchPrompt('remind_email')">Custom...</button>
+                                    </div>
+                                </div>
+                                <div class="action-group delete-batch-group">
+                                    <label>🗑️ Delete Batch:</label>
+                                    <div class="btn-group">
+                                        <select id="deleteBatchType" class="form-control form-control-sm">
+                                            <option value="sms">SMS</option>
+                                            <option value="email">Email</option>
+                                        </select>
+                                        <select id="deleteBatchNumber" class="form-control form-control-sm">
+                                            <option value="">-- Select --</option>
+                                        </select>
+                                        <button class="btn btn-danger btn-sm"
+                                            onclick="deleteBatchAction()">Delete</button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="action-group delete-batch-group">
-                            <label>🗑️ Delete Batch:</label>
-                            <div class="btn-group">
-                                <select id="deleteBatchType" class="form-control form-control-sm">
-                                    <option value="sms">SMS</option>
-                                    <option value="email">Email</option>
-                                </select>
-                                <select id="deleteBatchNumber" class="form-control form-control-sm">
-                                    <option value="">-- Select --</option>
-                                </select>
-                                <button class="btn btn-danger btn-sm" onclick="deleteBatchAction()">Delete</button>
+                            <div class="undo-actions">
+                                <button class="btn btn-outline" id="undoBtn" onclick="undoAction()" disabled>
+                                    ↶ Undo
+                                </button>
+                                <button class="btn btn-outline" id="redoBtn" onclick="redoAction()" disabled>
+                                    Redo ↷
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <div class="undo-actions">
-                        <button class="btn btn-outline" id="undoBtn" onclick="undoAction()" disabled>
-                            ↶ Undo
-                        </button>
-                        <button class="btn btn-outline" id="redoBtn" onclick="redoAction()" disabled>
-                            Redo ↷
-                        </button>
-                    </div>
+            </div> <!-- End data-view-main -->
+
+            <div class="data-view-sidebar">
+                <div id="projectInfoPanelContainer"></div>
             </div>
-            </section>
+    </div> <!-- End data-view-layout -->
+    </section>
 
-            <!-- Export View -->
-            <section class="view" id="exportView">
-                <div class="export-container">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>📤 Export Options</h3>
+    <!-- Export View -->
+    <section class="view" id="exportView">
+        <div class="export-container">
+            <div class="card">
+                <div class="card-header">
+                    <h3>📤 Export Options</h3>
+                </div>
+                <div class="card-body">
+                    <div class="export-type-tabs">
+                        <button class="tab-btn active" data-type="sms">SMS Export</button>
+                        <button class="tab-btn" data-type="email">Email Export</button>
+                        <button class="tab-btn" data-type="custom">Custom Export</button>
+                    </div>
+
+                    <div class="export-panel" id="smsExportPanel">
+                        <div class="form-group">
+                            <label>Select Batch:</label>
+                            <select id="smsBatchSelect" class="form-control">
+                                <option value="">-- Select batch --</option>
+                            </select>
                         </div>
-                        <div class="card-body">
-                            <div class="export-type-tabs">
-                                <button class="tab-btn active" data-type="sms">SMS Export</button>
-                                <button class="tab-btn" data-type="email">Email Export</button>
-                                <button class="tab-btn" data-type="custom">Custom Export</button>
-                            </div>
-
-                            <div class="export-panel" id="smsExportPanel">
-                                <div class="form-group">
-                                    <label>Select Batch:</label>
-                                    <select id="smsBatchSelect" class="form-control">
-                                        <option value="">-- Select batch --</option>
-                                    </select>
-                                </div>
-                                <div class="export-preview-info">
-                                    <span>Rows to export: <strong id="smsExportCount">0</strong></span>
-                                </div>
-                                <div class="form-group">
-                                    <label>Columns to export:</label>
-                                    <div class="column-chips" id="smsExportColumns">
-                                        <span class="chip active">Phone (Column A)</span>
-                                        <span class="chip active">SMS Content</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="export-panel" id="emailExportPanel" style="display: none;">
-                                <div class="form-group">
-                                    <label>Select Batch:</label>
-                                    <select id="emailBatchSelect" class="form-control">
-                                        <option value="">-- Select batch --</option>
-                                    </select>
-                                </div>
-                                <div class="export-preview-info">
-                                    <span>Rows to export: <strong id="emailExportCount">0</strong></span>
-                                </div>
-                                <div class="form-group">
-                                    <label>Columns to export:</label>
-                                    <div class="column-chips" id="emailExportColumns">
-                                        <span class="chip active">Email</span>
-                                        <span class="chip active">SGUID Link</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="export-panel" id="customExportPanel" style="display: none;">
-                                <div class="form-group">
-                                    <label>Select Columns:</label>
-                                    <div class="column-selector" id="customColumnSelector">
-                                        <!-- Dynamic columns -->
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label>Filter:</label>
-                                    <select id="customExportFilter" class="form-control">
-                                        <option value="all">All rows</option>
-                                        <option value="visible">Visible rows only (current filter)</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div class="export-preview-info">
+                            <span>Rows to export: <strong id="smsExportCount">0</strong></span>
                         </div>
-                        <div class="card-footer">
-                            <div class="form-group inline">
-                                <label>Format:</label>
-                                <select id="exportFormat" class="form-control form-control-sm">
-                                    <option value="xlsx">Excel (.xlsx)</option>
-                                    <option value="csv">CSV (.csv)</option>
-                                </select>
+                        <div class="form-group">
+                            <label>Columns to export:</label>
+                            <div class="column-chips" id="smsExportColumns">
+                                <span class="chip active">Phone (Column A)</span>
+                                <span class="chip active">SMS Content</span>
                             </div>
-                            <button class="btn btn-primary btn-lg" onclick="executeExport()">
-                                📥 Download Export
-                            </button>
                         </div>
                     </div>
 
-                    <div class="card export-history-card">
-                        <div class="card-header">
-                            <h3>📜 Export History</h3>
+                    <div class="export-panel" id="emailExportPanel" style="display: none;">
+                        <div class="form-group">
+                            <label>Select Batch:</label>
+                            <select id="emailBatchSelect" class="form-control">
+                                <option value="">-- Select batch --</option>
+                            </select>
                         </div>
-                        <div class="card-body">
-                            <ul class="export-history-list" id="exportHistory">
-                                <li class="empty-state">
-                                    <span class="empty-icon">📁</span>
-                                    <p>Chưa có export nào</p>
-                                </li>
-                            </ul>
+                        <div class="export-preview-info">
+                            <span>Rows to export: <strong id="emailExportCount">0</strong></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Columns to export:</label>
+                            <div class="column-chips" id="emailExportColumns">
+                                <span class="chip active">Email</span>
+                                <span class="chip active">SGUID Link</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="export-panel" id="customExportPanel" style="display: none;">
+                        <div class="form-group">
+                            <label>Select Columns:</label>
+                            <div class="column-selector" id="customColumnSelector">
+                                <!-- Dynamic columns -->
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Filter:</label>
+                            <select id="customExportFilter" class="form-control">
+                                <option value="all">All rows</option>
+                                <option value="visible">Visible rows only (current filter)</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-            </section>
-
-            <!-- Config View -->
-            <section class="view" id="configView">
-                <div class="config-container">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>⚙️ Column Configuration</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="config-grid">
-                                <div class="form-group">
-                                    <label>Source Column (sguid_link):</label>
-                                    <select id="configSourceCol" class="form-control">
-                                        <option value="E">E</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Content Column (SMS):</label>
-                                    <select id="configContentCol" class="form-control">
-                                        <option value="P">P</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>SMS Batch Column:</label>
-                                    <select id="configBatchCol" class="form-control">
-                                        <option value="Q">Q</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Email Column:</label>
-                                    <select id="configEmailCol" class="form-control">
-                                        <option value="H">H</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Email Batch Column:</label>
-                                    <select id="configEmailBatchCol" class="form-control">
-                                        <option value="S">S</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Email Link Column:</label>
-                                    <select id="configEmailLinkCol" class="form-control">
-                                        <option value="E">E</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Remind SMS Batch Column:</label>
-                                    <select id="configRemindSmsBatchCol" class="form-control">
-                                        <option value="T">T</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Remind Email Batch Column:</label>
-                                    <select id="configRemindEmailBatchCol" class="form-control">
-                                        <option value="U">U</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Respondent Status Column:</label>
-                                    <select id="configStatusCol" class="form-control">
-                                        <option value="V">V</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                <div class="card-footer">
+                    <div class="form-group inline">
+                        <label>Format:</label>
+                        <select id="exportFormat" class="form-control form-control-sm">
+                            <option value="xlsx">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                        </select>
                     </div>
+                    <button class="btn btn-primary btn-lg" onclick="executeExport()">
+                        📥 Download Export
+                    </button>
+                </div>
+            </div>
 
-                    <!-- API Credentials Card -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>🔑 Alchemer API Credentials</h3>
-                            <span class="api-status" id="alchemerApiStatus">Not configured</span>
-                        </div>
-                        <div class="card-body">
-                            <p class="form-hint" style="margin-bottom: 16px;">
-                                Để fetch quota từ Alchemer, bạn cần nhập API credentials.
-                                Lấy từ: Alchemer → Account → Integrations → API
-                            </p>
-                            <div class="form-group">
-                                <label>API Token:</label>
-                                <input type="text" id="alchemerApiToken" class="form-control"
-                                    placeholder="Nhập API Token">
-                            </div>
-                            <div class="form-group">
-                                <label>API Token Secret:</label>
-                                <input type="password" id="alchemerApiSecret" class="form-control"
-                                    placeholder="Nhập API Token Secret">
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <button class="btn btn-primary" onclick="saveAlchemerCredentials()">
-                                💾 Save Credentials
-                            </button>
-                            <button class="btn btn-outline" onclick="testAlchemerConnection()">
-                                🔗 Test Connection
-                            </button>
-                        </div>
-                    </div>
+            <div class="card export-history-card">
+                <div class="card-header">
+                    <h3>📜 Export History</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="export-history-list" id="exportHistory">
+                        <li class="empty-state">
+                            <span class="empty-icon">📁</span>
+                            <p>Chưa có export nào</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>📝 Template Management</h3>
+    <!-- Config View -->
+    <section class="view" id="configView">
+        <div class="config-container">
+            <div class="card">
+                <div class="card-header">
+                    <h3>⚙️ Column Configuration</h3>
+                </div>
+                <div class="card-body">
+                    <div class="config-grid">
+                        <div class="form-group">
+                            <label>Source Column (sguid_link):</label>
+                            <select id="configSourceCol" class="form-control">
+                                <option value="E">E</option>
+                            </select>
                         </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label>Current Template:</label>
-                                <textarea id="templateText" class="form-control" rows="4"
-                                    placeholder="Enter SMS template text..."></textarea>
-                                <small class="form-hint">Biến {link} sẽ được thay bằng giá trị từ Source
-                                    Column</small>
-                            </div>
-                            <div class="template-library">
-                                <label>Saved Templates:</label>
-                                <div class="template-list" id="templateList">
-                                    <!-- Dynamic content populated by UIRenderer.renderTemplateLibrary() -->
-                                </div>
-                                <button class="btn btn-secondary" onclick="saveCurrentTemplate()">+ Save Current as
-                                    Template</button>
-                            </div>
+                        <div class="form-group">
+                            <label>Content Column (SMS):</label>
+                            <select id="configContentCol" class="form-control">
+                                <option value="P">P</option>
+                            </select>
                         </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>🔧 Advanced Options</h3>
+                        <div class="form-group">
+                            <label>SMS Batch Column:</label>
+                            <select id="configBatchCol" class="form-control">
+                                <option value="Q">Q</option>
+                            </select>
                         </div>
-                        <div class="card-body">
-                            <div class="form-group checkbox-group">
-                                <label>
-                                    <input type="checkbox" id="configOverwriteBatch">
-                                    Overwrite existing batch (ghi đè batch cũ)
-                                </label>
-                            </div>
-                            <div class="form-group checkbox-group">
-                                <label>
-                                    <input type="checkbox" id="configExportAfterMark">
-                                    Auto export after mark
-                                </label>
-                            </div>
-                            <div class="form-group">
-                                <label>Default batch limit:</label>
-                                <input type="number" id="configDefaultLimit" class="form-control" value="500" min="1">
-                            </div>
+                        <div class="form-group">
+                            <label>Email Column:</label>
+                            <select id="configEmailCol" class="form-control">
+                                <option value="H">H</option>
+                            </select>
                         </div>
-                        <div class="card-footer">
-                            <button class="btn btn-secondary" onclick="resetConfig()">Reset to Defaults</button>
-                            <button class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
+                        <div class="form-group">
+                            <label>Email Batch Column:</label>
+                            <select id="configEmailBatchCol" class="form-control">
+                                <option value="S">S</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Email Link Column:</label>
+                            <select id="configEmailLinkCol" class="form-control">
+                                <option value="E">E</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Remind SMS Batch Column:</label>
+                            <select id="configRemindSmsBatchCol" class="form-control">
+                                <option value="T">T</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Remind Email Batch Column:</label>
+                            <select id="configRemindEmailBatchCol" class="form-control">
+                                <option value="U">U</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Respondent Status Column:</label>
+                            <select id="configStatusCol" class="form-control">
+                                <option value="V">V</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+
+            <!-- API Credentials Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔑 Alchemer API Credentials</h3>
+                    <span class="api-status" id="alchemerApiStatus">Not configured</span>
+                </div>
+                <div class="card-body">
+                    <p class="form-hint" style="margin-bottom: 16px;">
+                        Để fetch quota từ Alchemer, bạn cần nhập API credentials.
+                        Lấy từ: Alchemer → Account → Integrations → API
+                    </p>
+                    <div class="form-group">
+                        <label>API Token:</label>
+                        <input type="text" id="alchemerApiToken" class="form-control" placeholder="Nhập API Token">
+                    </div>
+                    <div class="form-group">
+                        <label>API Token Secret:</label>
+                        <input type="password" id="alchemerApiSecret" class="form-control"
+                            placeholder="Nhập API Token Secret">
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary" onclick="saveAlchemerCredentials()">
+                        💾 Save Credentials
+                    </button>
+                    <button class="btn btn-outline" onclick="testAlchemerConnection()">
+                        🔗 Test Connection
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📝 Template Management</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Current Template:</label>
+                        <textarea id="templateText" class="form-control" rows="4"
+                            placeholder="Enter SMS template text..."></textarea>
+                        <small class="form-hint">Biến {link} sẽ được thay bằng giá trị từ Source
+                            Column</small>
+                    </div>
+                    <div class="template-library">
+                        <label>Saved Templates:</label>
+                        <div class="template-list" id="templateList">
+                            <!-- Dynamic content populated by UIRenderer.renderTemplateLibrary() -->
+                        </div>
+                        <button class="btn btn-secondary" onclick="saveCurrentTemplate()">+ Save Current as
+                            Template</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔧 Advanced Options</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="configOverwriteBatch">
+                            Overwrite existing batch (ghi đè batch cũ)
+                        </label>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="configExportAfterMark">
+                            Auto export after mark
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Default batch limit:</label>
+                        <input type="number" id="configDefaultLimit" class="form-control" value="500" min="1">
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-secondary" onclick="resetConfig()">Reset to Defaults</button>
+                    <button class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+    </section>
     </div>
     </main>
     </div>
