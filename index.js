@@ -2291,10 +2291,13 @@ function renderProjectDetail(projectId) {
 }
 
 function renderProjectQuotas(project) {
+    console.log('[DEBUG] renderProjectQuotas called, project.quotas:', project?.quotas?.length || 0);
+
     const quotaList = document.getElementById('projectQuotaList');
     const quotaSummary = document.getElementById('quotaSummary');
 
     if (!project.quotas || project.quotas.length === 0) {
+        console.log('[DEBUG] No quotas found, showing empty state');
         quotaList.innerHTML = `
             <div class="empty-state small">
                 <p>Click "Refresh" để lấy quota từ Alchemer</p>
@@ -2379,6 +2382,8 @@ function renderProjectQuotas(project) {
 }
 
 async function refreshProjectQuotas() {
+    console.log('[DEBUG] refreshProjectQuotas called, selectedProjectId:', selectedProjectId);
+
     if (!selectedProjectId) {
         UIRenderer.showToast('Vui lòng chọn project', 'warning');
         return;
@@ -2389,7 +2394,14 @@ async function refreshProjectQuotas() {
     btn.textContent = '⏳ Loading...';
 
     try {
+        console.log('[DEBUG] Calling ProjectManager.fetchQuotas...');
         const result = await ProjectManager.fetchQuotas(selectedProjectId);
+        console.log('[DEBUG] fetchQuotas result:', result);
+
+        // Get the updated project to verify quotas were saved
+        const updatedProject = ProjectManager.getProject(selectedProjectId);
+        console.log('[DEBUG] Updated project quotas:', updatedProject?.quotas?.length || 0);
+
         renderProjectDetail(selectedProjectId);
         UIRenderer.showToast(`Đã cập nhật ${result.quotas.length} quotas`, 'success');
     } catch (error) {
