@@ -53,6 +53,9 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
+        // Log the raw response structure for debugging
+        console.log('Alchemer quotas raw response:', JSON.stringify(data).substring(0, 500));
+
         if (!response.ok) {
             return res.status(response.status).json({
                 result_ok: false,
@@ -61,9 +64,25 @@ export default async function handler(req, res) {
             });
         }
 
-        // Return the quota data
-        // Alchemer returns: { result_ok: true, quotas: [...] }
-        return res.status(200).json(data);
+        // Normalize the response - Alchemer may return quotas in different structures
+        // Possible formats: { data: [...] }, { data: { quotas: [...] } }, { quotas: [...] }
+        let quotas = [];
+        if (Array.isArray(data.data)) {
+            quotas = data.data;
+        } else if (data.data && Array.isArray(data.data.quotas)) {
+            quotas = data.data.quotas;
+        } else if (Array.isArray(data.quotas)) {
+            quotas = data.quotas;
+        }
+
+        console.log(`Found ${quotas.length} quotas for survey`);
+
+        // Return normalized quota data
+        return res.status(200).json({
+            result_ok: true,
+            data: quotas,
+            count: quotas.length
+        });
 
     } catch (error) {
         console.error('Quotas proxy error:', error);
