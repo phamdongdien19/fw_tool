@@ -88,9 +88,12 @@ export default async function handler(req, res) {
                 const encodedPath = `projects/${encodeURIComponent(name)}.json`;
                 blobInfo = await head(encodedPath);
             } catch (headErr2) {
-                return res.status(404).json({
-                    error: 'Project not found',
-                    projectName: name
+                // File doesn't exist - but still try to remove from index (ghost cleanup)
+                console.log('[delete.js] File not found, cleaning up index for:', name);
+                await removeFromProjectsIndex(name);
+                return res.status(200).json({
+                    success: true,
+                    message: `Project "${name}" removed from index (file was already deleted)`
                 });
             }
         }

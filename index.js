@@ -10,7 +10,7 @@ let pendingFile = null;
 // ===== Pagination State =====
 let paginationState = {
     currentPage: 1,
-    rowsPerPage: 100,
+    rowsPerPage: 25,
     totalRows: 0,
     totalPages: 1
 };
@@ -1481,7 +1481,7 @@ const urlImportState = {
     filterColumn: '',
     selectedFilterValues: new Set(),
     currentPage: 1,
-    rowsPerPage: 100,
+    rowsPerPage: 25,
     totalPages: 1,
     projectName: '',
     currentUrl: ''

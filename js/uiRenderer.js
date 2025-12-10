@@ -76,7 +76,7 @@ const UIRenderer = {
         `;
 
         // Use global pagination state
-        const pageState = typeof paginationState !== 'undefined' ? paginationState : { currentPage: 1, rowsPerPage: 100 };
+        const pageState = typeof paginationState !== 'undefined' ? paginationState : { currentPage: 1, rowsPerPage: 25 };
         const start = (pageState.currentPage - 1) * pageState.rowsPerPage;
         const end = Math.min(start + pageState.rowsPerPage, displayData.length);
         const pageData = displayData.slice(start, end);
@@ -368,12 +368,18 @@ const UIRenderer = {
      * Render export options
      */
     renderExportOptions() {
+        console.log('[UIRenderer] renderExportOptions called');
+
         // Update SMS batch select
         const smsBatchSelect = document.getElementById('smsBatchSelect');
         const smsBatches = DataManager.getSmsBatches();
+        console.log('[UIRenderer] smsBatches from DataManager:', smsBatches);
+        console.log('[UIRenderer] smsBatchSelect element:', smsBatchSelect);
+
         if (smsBatchSelect) {
             smsBatchSelect.innerHTML = '<option value="">-- Chọn batch --</option>' +
                 smsBatches.map(b => `<option value="${b}">Batch ${b}</option>`).join('');
+            console.log('[UIRenderer] Updated smsBatchSelect innerHTML');
         }
 
         // Update Email batch select

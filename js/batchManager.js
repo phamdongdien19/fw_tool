@@ -67,6 +67,10 @@ const BatchManager = {
         // Update batch tracking
         if (picked > 0) {
             DataManager.smsBatches.add(newBatch);
+            console.log('[BatchManager] Added SMS batch:', newBatch, 'Picked:', picked);
+            console.log('[BatchManager] smsBatches after add:', Array.from(DataManager.smsBatches));
+        } else {
+            console.log('[BatchManager] No rows picked for SMS batch. Picked:', picked);
         }
 
         // Log action
