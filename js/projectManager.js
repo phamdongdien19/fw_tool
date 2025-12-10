@@ -309,7 +309,7 @@ const ProjectManager = {
     /**
      * Create a new project
      */
-    async createProject({ name, surveyId, criteria, target, notes }) {
+    async createProject({ name, surveyId, criteria, target, notes, vendorLinks }) {
         const project = {
             id: this.generateId(),
             name: name || 'Untitled Project',
@@ -318,7 +318,7 @@ const ProjectManager = {
             target: parseInt(target) || 0,
             notes: notes || '',
             vendors: [],
-            vendorLinks: {},
+            vendorLinks: vendorLinks || {},
             quotas: [],
             lastQuotaFetch: null,
             createdAt: new Date().toISOString(),

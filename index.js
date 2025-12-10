@@ -2383,6 +2383,7 @@ async function refreshProjectQuotas() {
 function openProjectModal(editId = null) {
     const project = editId ? ProjectManager.getProject(editId) : null;
     const isEdit = !!project;
+    const vendorLinks = isEdit ? (project.vendorLinks || {}) : {};
 
     const modalBody = `
         <div class="form-group">
@@ -2410,6 +2411,31 @@ function openProjectModal(editId = null) {
             <textarea id="projectNotesInput" class="form-control" rows="2" 
                 placeholder="VD: Ưu tiên nhóm 25-35 tuổi">${isEdit ? project.notes : ''}</textarea>
         </div>
+        
+        <hr style="margin: 16px 0; border-color: var(--border-color);">
+        <h4 style="font-size: 14px; margin-bottom: 12px;">🏢 Sample Vendors</h4>
+        
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px;">
+                <img src="assets/icons/purespectrum.png" alt="PureSpectrum" style="height: 18px;">
+                PureSpectrum Link
+            </label>
+            <input type="text" id="vendorLinkPurespectrum" class="form-control" 
+                value="${vendorLinks.purespectrum || ''}" placeholder="Link dự án PureSpectrum">
+        </div>
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px;">
+                <img src="assets/icons/cint.png" alt="Cint" style="height: 14px;">
+                Cint Link
+            </label>
+            <input type="text" id="vendorLinkCint" class="form-control" 
+                value="${vendorLinks.cint || ''}" placeholder="Link dự án Cint">
+        </div>
+        <div class="form-group">
+            <label>Vendor khác Link</label>
+            <input type="text" id="vendorLinkOther" class="form-control" 
+                value="${vendorLinks.other || ''}" placeholder="Link vendor khác">
+        </div>
     `;
 
     openModal(
@@ -2426,16 +2452,23 @@ async function saveProjectFromModal(editId = null) {
     const criteria = document.getElementById('projectCriteriaInput').value.trim();
     const notes = document.getElementById('projectNotesInput').value.trim();
 
+    // Get vendor links
+    const vendorLinks = {
+        purespectrum: (document.getElementById('vendorLinkPurespectrum')?.value || '').trim(),
+        cint: (document.getElementById('vendorLinkCint')?.value || '').trim(),
+        other: (document.getElementById('vendorLinkOther')?.value || '').trim()
+    };
+
     if (!name) {
         UIRenderer.showToast('Vui lòng nhập tên project', 'warning');
         return;
     }
 
     if (editId) {
-        await ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes });
+        await ProjectManager.updateProject(editId, { name, surveyId, target, criteria, notes, vendorLinks });
         UIRenderer.showToast('Đã cập nhật project', 'success');
     } else {
-        const newProject = await ProjectManager.createProject({ name, surveyId, target, criteria, notes });
+        const newProject = await ProjectManager.createProject({ name, surveyId, target, criteria, notes, vendorLinks });
         selectedProjectId = newProject.id;
         UIRenderer.showToast('Đã tạo project mới', 'success');
     }
@@ -2445,6 +2478,9 @@ async function saveProjectFromModal(editId = null) {
     if (selectedProjectId) {
         renderProjectDetail(selectedProjectId);
     }
+
+    // Also refresh project info panel in Filter & Batch
+    renderProjectInfoPanel();
 }
 
 function editCurrentProject() {
