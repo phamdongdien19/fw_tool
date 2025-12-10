@@ -2983,6 +2983,30 @@ textarea.form-control {
     line-height: 1.6;
 }
 
+.project-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .project-info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.project-info-left {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.project-info-right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 .project-info-panel-body .info-line {
     display: flex;
     gap: 8px;
