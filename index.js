@@ -4,7 +4,7 @@
  */
 
 // ===== Global State =====
-let currentView = 'dashboard';
+let currentView = 'projects';
 let pendingFile = null;
 
 // ===== Pagination State =====
@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupExportTabs();
     setupSearch();
 
-    // Initial render
-    UIRenderer.renderDashboard();
+    // Initial render - switch to default Projects view
+    switchView('projects');
     UIRenderer.renderConfig();
 
     console.log('FW Tools initialized successfully');
