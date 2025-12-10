@@ -459,11 +459,22 @@ const ProjectManager = {
                 isComplete: (parseInt(q.responses) || 0) >= (parseInt(q.limit) || 0)
             }));
 
-            // Update project with quota data
-            await this.updateProject(projectId, {
+            // Update local project cache IMMEDIATELY for UI to display
+            const index = this.projects.findIndex(p => p.id === projectId);
+            if (index >= 0) {
+                this.projects[index].quotas = quotas;
+                this.projects[index].lastQuotaFetch = new Date().toISOString();
+                this.projects[index].updatedAt = new Date().toISOString();
+            }
+
+            // Also save to server (async, don't block UI)
+            this.updateProjectOnServer(projectId, {
                 quotas: quotas,
                 lastQuotaFetch: new Date().toISOString()
-            });
+            }).catch(e => console.warn('Failed to save quotas to server:', e));
+
+            // Save to localStorage
+            this.saveToLocalStorage();
 
             return {
                 success: true,
