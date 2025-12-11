@@ -2862,7 +2862,7 @@ function markVendorChanged() {
     if (statusEl) statusEl.textContent = '⚠️ Chưa lưu';
 }
 
-// Save project info (notes + vendorLinks) to server
+// Save project info (notes + vendorLinks + vendorQuotaTable) to server
 async function saveProjectInfoNow() {
     const activeProject = ProjectManager.getActiveProject();
     if (!activeProject) {
@@ -2884,11 +2884,17 @@ async function saveProjectInfoNow() {
         other: (document.getElementById('vendorLink_other')?.value || '').trim()
     };
 
+    // Get current vendor quota table data (filter out empty rows)
+    const vendorQuotaTable = vendorQuotaTableData.filter(row => row.name && row.name.trim());
+
     try {
-        await ProjectManager.updateProject(activeProject.id, { notes, vendorLinks });
+        await ProjectManager.updateProject(activeProject.id, { notes, vendorLinks, vendorQuotaTable });
 
         if (statusEl) statusEl.textContent = '✅ Đã lưu';
         UIRenderer.showToast('Đã lưu thông tin project', 'success');
+
+        // Update local data
+        vendorQuotaTableData = vendorQuotaTable;
 
         // Re-render to update hyperlinks
         renderProjectInfoPanel();
