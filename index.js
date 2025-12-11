@@ -2218,8 +2218,10 @@ async function renderProjectsList() {
         const isActive = p.id === activeId;
         const isSelected = p.id === selectedProjectId;
         const isStarred = isProjectStarred(p.name);
-        const quotaInfo = p.quotas && p.quotas.length > 0
-            ? `${p.quotas.reduce((s, q) => s + q.count, 0)}/${p.quotas.reduce((s, q) => s + q.limit, 0)}`
+        // Find TOTAL quota for count display
+        const totalQuota = p.quotas && p.quotas.find(q => q.name && q.name.toUpperCase().startsWith('TOTAL'));
+        const quotaInfo = totalQuota
+            ? `${totalQuota.count}/${totalQuota.limit}`
             : '';
 
         // Escape special characters in name for HTML attributes
