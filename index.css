@@ -2948,7 +2948,8 @@ textarea.form-control {
     border-radius: var(--border-radius);
     margin-bottom: 16px;
     overflow: hidden;
-    max-width: 500px;
+    width: 400px;
+    max-width: 100%;
 }
 
 .project-info-panel-header {
@@ -2984,9 +2985,9 @@ textarea.form-control {
 }
 
 .project-info-grid {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 @media (max-width: 768px) {
