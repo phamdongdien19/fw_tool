@@ -2941,15 +2941,33 @@ textarea.form-control {
     }
 }
 
+/* Project Panels Wrapper - 2 column layout */
+.project-panels-wrapper {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
 /* Project Info Panel in Data View */
 .project-info-panel {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    margin-bottom: 16px;
     overflow: hidden;
-    width: 400px;
+    width: 350px;
     max-width: 100%;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .project-panels-wrapper {
+        flex-direction: column;
+    }
+
+    .project-info-panel {
+        width: 100%;
+    }
 }
 
 .project-info-panel-header {
