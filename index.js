@@ -2845,6 +2845,9 @@ function renderProjectInfoPanel() {
                             </div>
                         </div>
                         
+                        <!-- Vendor Quota Table Section -->
+                        ${renderVendorQuotaTable()}
+                        
                         ${saveButtonHtml}
                     </div>
                 </div>
@@ -3224,4 +3227,280 @@ window.importDataForProject = importDataForProject;
 window.handleProjectFileImport = handleProjectFileImport;
 window.updateProjectDataInfo = updateProjectDataInfo;
 window.loadProjectData = loadProjectData;
+
+// ===== Vendor Quota Table Functions =====
+
+// Store temporary vendor quota data for editing
+let vendorQuotaTableData = [];
+
+/**
+ * Render vendor quota table section
+ */
+function renderVendorQuotaTable() {
+    const activeProject = ProjectManager.getActiveProject();
+    if (!activeProject) return '';
+
+    // Load saved data or initialize empty
+    vendorQuotaTableData = activeProject.vendorQuotaTable || [];
+
+    const tableRows = vendorQuotaTableData.map((row, idx) => `
+        <tr data-idx="${idx}">
+            <td>
+                <input type="text" value="${escapeHtml(row.name || '')}" 
+                    onchange="updateVendorQuotaRow(${idx}, 'name', this.value)"
+                    placeholder="Tên quota...">
+            </td>
+            <td>
+                <input type="number" value="${row.need || 0}" min="0"
+                    onchange="updateVendorQuotaRow(${idx}, 'need', parseInt(this.value) || 0)">
+            </td>
+            <td>
+                <button class="delete-row-btn" onclick="removeVendorQuotaRow(${idx})" title="Xóa dòng">🗑️</button>
+            </td>
+        </tr>
+    `).join('');
+
+    return `
+        <div class="vendor-quota-section">
+            <h5>📊 Vendor Quota Table</h5>
+            ${vendorQuotaTableData.length > 0 ? `
+                <table class="vendor-quota-table" id="vendorQuotaTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 60%;">Tên quota</th>
+                            <th style="width: 30%;">Need</th>
+                            <th style="width: 10%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            ` : `
+                <div class="vendor-quota-empty">
+                    Chưa có dữ liệu. Click "Fetch từ Alchemer" hoặc "➕ Thêm dòng" để bắt đầu.
+                </div>
+            `}
+            <div class="vendor-quota-actions">
+                <button class="btn btn-sm btn-secondary" onclick="fetchVendorQuotasFromAlchemer()">🔄 Fetch từ Alchemer</button>
+                <button class="btn btn-sm btn-outline" onclick="addVendorQuotaRow()">➕ Thêm dòng</button>
+                <button class="btn btn-sm btn-primary" onclick="saveVendorQuotaTable()">💾 Save</button>
+                <button class="btn btn-sm btn-outline" onclick="copyVendorQuotaTable()" ${vendorQuotaTableData.length === 0 ? 'disabled' : ''}>📋 Copy</button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Escape HTML for safe rendering
+ */
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
+ * Fetch quotas from Alchemer API and populate table
+ */
+async function fetchVendorQuotasFromAlchemer() {
+    const activeProject = ProjectManager.getActiveProject();
+    if (!activeProject) {
+        UIRenderer.showToast('Không có project đang active', 'warning');
+        return;
+    }
+
+    if (!activeProject.surveyId) {
+        UIRenderer.showToast('Project chưa có Survey ID. Vui lòng cập nhật trong Projects.', 'warning');
+        return;
+    }
+
+    if (typeof AlchemerAPI === 'undefined' || !AlchemerAPI.isConfigured()) {
+        UIRenderer.showToast('Chưa cấu hình Alchemer API. Vào Config để setup.', 'warning');
+        return;
+    }
+
+    UIRenderer.showToast('Đang fetch quota từ Alchemer...', 'info');
+
+    try {
+        const result = await ProjectManager.fetchQuotas(activeProject.id);
+
+        if (result.quotas && result.quotas.length > 0) {
+            // Convert to vendor quota table format
+            vendorQuotaTableData = result.quotas.map(q => ({
+                name: q.name,
+                need: q.remaining || 0
+            }));
+
+            // Re-render the panel
+            renderProjectInfoPanel();
+            UIRenderer.showToast(`Đã fetch ${result.quotas.length} quotas`, 'success');
+        } else {
+            UIRenderer.showToast('Không có quota nào trong survey', 'warning');
+        }
+    } catch (error) {
+        console.error('Fetch vendor quotas error:', error);
+        UIRenderer.showToast(`Lỗi: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Add a new row to vendor quota table
+ */
+function addVendorQuotaRow() {
+    vendorQuotaTableData.push({ name: '', need: 0 });
+    rerenderVendorQuotaTableOnly();
+}
+
+/**
+ * Remove a row from vendor quota table
+ */
+function removeVendorQuotaRow(idx) {
+    vendorQuotaTableData.splice(idx, 1);
+    rerenderVendorQuotaTableOnly();
+}
+
+/**
+ * Update a specific cell in vendor quota table
+ */
+function updateVendorQuotaRow(idx, field, value) {
+    if (vendorQuotaTableData[idx]) {
+        vendorQuotaTableData[idx][field] = value;
+    }
+}
+
+/**
+ * Re-render only the vendor quota table section
+ */
+function rerenderVendorQuotaTableOnly() {
+    const section = document.querySelector('.vendor-quota-section');
+    if (section) {
+        const activeProject = ProjectManager.getActiveProject();
+        if (!activeProject) return;
+
+        const tableRows = vendorQuotaTableData.map((row, idx) => `
+            <tr data-idx="${idx}">
+                <td>
+                    <input type="text" value="${escapeHtml(row.name || '')}" 
+                        onchange="updateVendorQuotaRow(${idx}, 'name', this.value)"
+                        placeholder="Tên quota...">
+                </td>
+                <td>
+                    <input type="number" value="${row.need || 0}" min="0"
+                        onchange="updateVendorQuotaRow(${idx}, 'need', parseInt(this.value) || 0)">
+                </td>
+                <td>
+                    <button class="delete-row-btn" onclick="removeVendorQuotaRow(${idx})" title="Xóa dòng">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+
+        const tableHtml = vendorQuotaTableData.length > 0 ? `
+            <table class="vendor-quota-table" id="vendorQuotaTable">
+                <thead>
+                    <tr>
+                        <th style="width: 60%;">Tên quota</th>
+                        <th style="width: 30%;">Need</th>
+                        <th style="width: 10%;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        ` : `
+            <div class="vendor-quota-empty">
+                Chưa có dữ liệu. Click "Fetch từ Alchemer" hoặc "➕ Thêm dòng" để bắt đầu.
+            </div>
+        `;
+
+        section.innerHTML = `
+            <h5>📊 Vendor Quota Table</h5>
+            ${tableHtml}
+            <div class="vendor-quota-actions">
+                <button class="btn btn-sm btn-secondary" onclick="fetchVendorQuotasFromAlchemer()">🔄 Fetch từ Alchemer</button>
+                <button class="btn btn-sm btn-outline" onclick="addVendorQuotaRow()">➕ Thêm dòng</button>
+                <button class="btn btn-sm btn-primary" onclick="saveVendorQuotaTable()">💾 Save</button>
+                <button class="btn btn-sm btn-outline" onclick="copyVendorQuotaTable()" ${vendorQuotaTableData.length === 0 ? 'disabled' : ''}>📋 Copy</button>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Save vendor quota table to project
+ */
+async function saveVendorQuotaTable() {
+    const activeProject = ProjectManager.getActiveProject();
+    if (!activeProject) {
+        UIRenderer.showToast('Không có project đang active', 'warning');
+        return;
+    }
+
+    // Filter out empty rows
+    const cleanedData = vendorQuotaTableData.filter(row => row.name && row.name.trim());
+
+    UIRenderer.showToast('Đang lưu...', 'info');
+
+    try {
+        await ProjectManager.updateProject(activeProject.id, {
+            vendorQuotaTable: cleanedData
+        });
+
+        vendorQuotaTableData = cleanedData;
+        UIRenderer.showToast('Đã lưu Vendor Quota Table', 'success');
+    } catch (error) {
+        console.error('Save vendor quota table error:', error);
+        UIRenderer.showToast(`Lỗi: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Copy vendor quota table to clipboard for Gmail
+ */
+function copyVendorQuotaTable() {
+    const activeProject = ProjectManager.getActiveProject();
+    if (!activeProject || vendorQuotaTableData.length === 0) {
+        UIRenderer.showToast('Không có dữ liệu để copy', 'warning');
+        return;
+    }
+
+    // Build text format for Gmail
+    let text = `📊 Quota - ${activeProject.name}\n`;
+    text += `Tên quota | Need\n`;
+    text += `─────────────────────\n`;
+
+    vendorQuotaTableData.forEach(row => {
+        if (row.name && row.name.trim()) {
+            text += `${row.name} | ${row.need}\n`;
+        }
+    });
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(text).then(() => {
+        UIRenderer.showToast('Đã copy bảng quota vào clipboard!', 'success');
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        // Fallback: select text
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        UIRenderer.showToast('Đã copy bảng quota vào clipboard!', 'success');
+    });
+}
+
+// Make vendor quota functions global
+window.renderVendorQuotaTable = renderVendorQuotaTable;
+window.fetchVendorQuotasFromAlchemer = fetchVendorQuotasFromAlchemer;
+window.addVendorQuotaRow = addVendorQuotaRow;
+window.removeVendorQuotaRow = removeVendorQuotaRow;
+window.updateVendorQuotaRow = updateVendorQuotaRow;
+window.saveVendorQuotaTable = saveVendorQuotaTable;
+window.copyVendorQuotaTable = copyVendorQuotaTable;
 

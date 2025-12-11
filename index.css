@@ -3887,7 +3887,6 @@ textarea.form-control {
     }
 }
 
-/* Safe area for iPhone X and newer */
 @supports (padding: max(0px)) {
     @media screen and (max-width: 480px) {
         .header {
@@ -3902,4 +3901,129 @@ textarea.form-control {
             bottom: max(80px, calc(80px + env(safe-area-inset-bottom)));
         }
     }
+}
+
+/* =====================================================
+   Vendor Quota Table Styles
+   ===================================================== */
+
+.vendor-quota-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.vendor-quota-section h5 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+}
+
+.vendor-quota-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.vendor-quota-table th,
+.vendor-quota-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.vendor-quota-table th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vendor-quota-table td {
+    color: var(--text-primary);
+}
+
+.vendor-quota-table tr:last-child td {
+    border-bottom: none;
+}
+
+.vendor-quota-table tr:hover {
+    background: var(--bg-hover);
+}
+
+.vendor-quota-table input[type="text"],
+.vendor-quota-table input[type="number"] {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 12px;
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+}
+
+.vendor-quota-table input[type="text"]:hover,
+.vendor-quota-table input[type="number"]:hover {
+    background: var(--bg-tertiary);
+}
+
+.vendor-quota-table input[type="text"]:focus,
+.vendor-quota-table input[type="number"]:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: var(--bg-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.vendor-quota-table input[type="number"] {
+    width: 80px;
+    text-align: right;
+}
+
+.vendor-quota-table .delete-row-btn {
+    background: none;
+    border: none;
+    color: var(--color-danger);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0.6;
+    transition: all var(--transition-fast);
+}
+
+.vendor-quota-table .delete-row-btn:hover {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.vendor-quota-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.vendor-quota-actions .btn {
+    font-size: 11px;
+    padding: 6px 12px;
+}
+
+/* Empty quota table state */
+.vendor-quota-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-style: italic;
 }
