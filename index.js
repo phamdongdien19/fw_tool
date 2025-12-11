@@ -2388,7 +2388,7 @@ function renderProjectQuotas(project) {
                 ${hiddenItems.map(renderItem).join('')}
             </div>
             <div class="quota-action-row" style="text-align: center; margin-top: 8px;">
-                <button class="btn btn-sm btn-link" id="quotaExpandBtnProjects" onclick="toggleQuotaDetails('projects')" style="text-decoration: none; color: var(--primary-color);">
+                <button class="btn btn-sm btn-link" id="quotaExpandBtnProjects" onclick="toggleQuotaDetails('projects')" style="text-decoration: none; color: var(--text-primary);">
                     ▼ Xem thêm (${hiddenItems.length})
                 </button>
             </div>
