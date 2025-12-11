@@ -2720,7 +2720,6 @@ function renderProjectInfoPanel() {
                     placeholder="Nhập link dự án ${name}..." 
                     value="${link || ''}"
                     onchange="markVendorChanged()">
-                ${link ? `<a href="${link}" target="_blank" class="btn btn-xs btn-outline" title="Mở link dự án">🔗</a>` : ''}
             </div>
         `;
     };
@@ -2738,7 +2737,6 @@ function renderProjectInfoPanel() {
                     value="${link}"
                     disabled
                     title="URL này được set trong bước Tạo/Sửa Project">
-                ${link ? `<a href="${link}" target="_blank" class="btn btn-xs btn-outline" title="Mở link">🔗</a>` : ''}
             </div>
         `;
     }).join('');
