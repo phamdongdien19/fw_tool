@@ -3329,15 +3329,16 @@ async function fetchVendorQuotasFromAlchemer() {
         const result = await ProjectManager.fetchQuotas(activeProject.id);
 
         if (result.quotas && result.quotas.length > 0) {
-            // Convert to vendor quota table format
+            // Convert to vendor quota table format - use remaining as need
             vendorQuotaTableData = result.quotas.map(q => ({
                 name: q.name,
                 need: q.remaining || 0
             }));
 
-            // Re-render the panel
-            renderProjectInfoPanel();
-            UIRenderer.showToast(`Đã fetch ${result.quotas.length} quotas`, 'success');
+            // Update the table UI immediately
+            rerenderVendorQuotaTableOnly();
+
+            UIRenderer.showToast(`Đã fetch ${result.quotas.length} quotas và điền vào bảng`, 'success');
         } else {
             UIRenderer.showToast('Không có quota nào trong survey', 'warning');
         }
@@ -3459,7 +3460,7 @@ async function saveVendorQuotaTable() {
 }
 
 /**
- * Copy vendor quota table to clipboard for Gmail
+ * Copy vendor quota table to clipboard for Gmail (HTML format)
  */
 function copyVendorQuotaTable() {
     const activeProject = ProjectManager.getActiveProject();
@@ -3468,30 +3469,69 @@ function copyVendorQuotaTable() {
         return;
     }
 
-    // Build text format for Gmail
-    let text = `📊 Quota - ${activeProject.name}\n`;
-    text += `Tên quota | Need\n`;
-    text += `─────────────────────\n`;
+    // Filter valid rows
+    const validRows = vendorQuotaTableData.filter(row => row.name && row.name.trim());
+    if (validRows.length === 0) {
+        UIRenderer.showToast('Không có dữ liệu để copy', 'warning');
+        return;
+    }
 
-    vendorQuotaTableData.forEach(row => {
-        if (row.name && row.name.trim()) {
-            text += `${row.name} | ${row.need}\n`;
-        }
+    // Build HTML table for Gmail
+    const tableRows = validRows.map(row =>
+        `<tr><td style="border:1px solid #ddd;padding:8px;">${escapeHtml(row.name)}</td><td style="border:1px solid #ddd;padding:8px;text-align:right;">${row.need}</td></tr>`
+    ).join('');
+
+    const html = `
+        <div style="font-family:Arial,sans-serif;">
+            <p><strong>📊 Quota - ${escapeHtml(activeProject.name)}</strong></p>
+            <table style="border-collapse:collapse;border:1px solid #ddd;min-width:300px;">
+                <thead>
+                    <tr style="background:#f5f5f5;">
+                        <th style="border:1px solid #ddd;padding:8px;text-align:left;">Tên quota</th>
+                        <th style="border:1px solid #ddd;padding:8px;text-align:right;">Need</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    // Also create plain text version
+    let plainText = `📊 Quota - ${activeProject.name}\n`;
+    plainText += `Tên quota | Need\n`;
+    plainText += `─────────────────────\n`;
+    validRows.forEach(row => {
+        plainText += `${row.name} | ${row.need}\n`;
     });
 
-    // Copy to clipboard
-    navigator.clipboard.writeText(text).then(() => {
-        UIRenderer.showToast('Đã copy bảng quota vào clipboard!', 'success');
+    // Copy both HTML and plain text
+    const blob = new Blob([html], { type: 'text/html' });
+    const blobText = new Blob([plainText], { type: 'text/plain' });
+
+    const clipboardItem = new ClipboardItem({
+        'text/html': blob,
+        'text/plain': blobText
+    });
+
+    navigator.clipboard.write([clipboardItem]).then(() => {
+        UIRenderer.showToast('Đã copy bảng quota (HTML) vào clipboard!', 'success');
     }).catch(err => {
-        console.error('Copy failed:', err);
-        // Fallback: select text
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        UIRenderer.showToast('Đã copy bảng quota vào clipboard!', 'success');
+        console.error('Copy HTML failed:', err);
+        // Fallback: copy plain text
+        navigator.clipboard.writeText(plainText).then(() => {
+            UIRenderer.showToast('Đã copy bảng quota vào clipboard!', 'success');
+        }).catch(err2 => {
+            console.error('Copy text failed:', err2);
+            const textarea = document.createElement('textarea');
+            textarea.value = plainText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            UIRenderer.showToast('Đã copy bảng quota vào clipboard!', 'success');
+        });
     });
 }
 

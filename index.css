@@ -3911,6 +3911,7 @@ textarea.form-control {
     margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid var(--border-color);
+    max-width: 400px;
 }
 
 .vendor-quota-section h5 {
