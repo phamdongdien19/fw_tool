@@ -43,9 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFilterPanel();
     setupExportTabs();
     setupSearch();
+    setupHashRouting(); // Setup URL hash routing
 
-    // Initial render
-    UIRenderer.renderDashboard();
+    // Initial render based on URL hash or default to dashboard
+    const initialView = getViewFromHash() || 'dashboard';
+    switchView(initialView, false); // Don't update hash on initial load
     UIRenderer.renderConfig();
 
     // Restore active project if exists
@@ -68,6 +70,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('FW Tools initialized successfully');
 });
+
+// ===== Hash Routing =====
+const validViews = ['dashboard', 'import', 'urlImport', 'projects', 'data', 'export', 'config'];
+
+function getViewFromHash() {
+    const hash = window.location.hash.slice(1); // Remove #
+    return validViews.includes(hash) ? hash : null;
+}
+
+function setupHashRouting() {
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', () => {
+        const view = getViewFromHash() || 'dashboard';
+        switchView(view, false); // Don't update hash again
+    });
+
+    // Also handle hashchange for edge cases
+    window.addEventListener('hashchange', () => {
+        const view = getViewFromHash() || 'dashboard';
+        if (view !== currentView) {
+            switchView(view, false);
+        }
+    });
+}
 
 // ===== Project Management =====
 function handleProjectSelect(projectName) {
@@ -122,7 +148,12 @@ function setupNavigation() {
     });
 }
 
-function switchView(viewName) {
+function switchView(viewName, updateHash = true) {
+    // Update URL hash (for bookmarking and refresh persistence)
+    if (updateHash && window.location.hash !== `#${viewName}`) {
+        history.pushState(null, '', `#${viewName}`);
+    }
+
     // Update nav
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.toggle('active', item.dataset.view === viewName);
